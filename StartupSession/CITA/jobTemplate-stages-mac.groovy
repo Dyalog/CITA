@@ -18,18 +18,20 @@ stage ("mac_%CITA_VERSION%_%VERSION%") {
           error "PLATFORM=mac, path=${path}: File does not exist, giving it up!"
         }
       }
-      testPath="%xinO%mac_%VERSION%_u64/"
+      testPath="%xinD%mac_%VERSION%_u64/"
       echo "testPath=$testPath"
-      cmdline = "%CMDLINE% CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log LOG_FILE=${testPath}CITA_Session.dlf citaDEVT=${citaDEVT}"
+
       if ("${env.NODE_NAME}"=="mac3") {
         echo "replacing for mac3"
         testPath = testPath.replaceAll("(^|=)/devt/","\$1/Volumes/devt/")
-        cmdline = cmdline.replaceAll("(^|=)/devt/","\$1/Volumes/devt/")
         citaDEVT="/Volumes/devt/"
         echo "citaDEVT=$citaDEVT"
       } else {
         citaDEVT="/devt/"
       }
+
+      cmdline = "%CMDLINE% CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log LOG_FILE=${testPath}CITA_Session.dlf citaDEVT=${citaDEVT}"
+      cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
       CITAlog="${testPath}CITA.log"
       echo "cmdline=$cmdline"
       echo "CITAlog=$CITAlog"

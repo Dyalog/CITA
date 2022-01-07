@@ -1,22 +1,27 @@
-stage ("pi_%CITA_VERSION%_%VERSION%") {
-  node ("pi&&%CITA_VERSION%&&%VERSION%") {
+stage ("win_%VERSION%") {
+  node ("win&&%VERSION%") {
     [%BITS%].each { BITS -> 
       [%EDITIONS%].each { EDITION ->
         // catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
         try {
           echo "NODE_NAME = ${env.NODE_NAME}"            
-          path = "/opt/mdyalog/%VERSION%/${BITS}/${EDITION}/mapl"
           E = EDITION.take(1)
+          if (E=="c") {
+              path = "${env.'PROGRAMFILES(x86)'}\\Dyalog\\Dyalog %VERSION% ${EDITION}\\dyalog.exe"
+          } else {
+              path = "${env.PROGRAMFILES}\\Dyalog\\Dyalog %VERSION% ${EDITION}\\dyalog.exe"
+
+          }
+              path = "/Program Files/Dyalog/Dyalog %VERSION% ${EDITION}/dyalog.exe"
           exists = fileExists(path)          
           if (exists) {
-            echo "PLATFORM=pi, path=${path}: File exists!"
+            echo "PLATFORM=win, path=${path}: File exists!"
           } else {
-            error "Found no interpreter for ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
+            error "Found no interpreter for ${E}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
           }
-          testPath="%xinD%pi_%VERSION%_${E}${BITS}/"
-          cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log LOG_FILE=${testPath}CITA_Session.dlf"
+          testPath="%xinD%win_%VERSION%_${E}${BITS}/"
+          cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
             cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
-          
           echo "Launching $path $cmdline "
           rjc = sh(script: "$path $cmdline" , returnStatus: true)
           exists = fileExists("${testPath}CITA.log.ok") 

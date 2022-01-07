@@ -22,14 +22,16 @@
       stages {
         stage ("Cleanup") {
           agent {
-            <!-- label "aix&&18.2&&cita_latest" -->
-            label "mac&&18.2&&cita_latest"
+            label "aix&&18.2&&cita_latest"
           }
           steps {
             cleanWs()
             catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-              sh "/opt/mdyalog/18.2/64/unicode/p8/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%"              
-              //sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
+              script {
+                def citaDEVT = "/devt/"
+                sh "/opt/mdyalog/18.2/64/unicode/p8/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%"              
+                //sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
+              }
             }
           }
         }

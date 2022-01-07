@@ -8,9 +8,9 @@
     bits: [32,64],
     platforms: [
         "aix",
-        // "mac",
-        // "pi",
-        //"win",
+        "mac",
+        "pi",
+        "win",
         //"linux",
         
     ],

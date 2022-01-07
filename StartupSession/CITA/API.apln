@@ -745,13 +745,18 @@
           :EndTrap
 ⍝ Variable xinD has parent of xinO, but based on the /devt/-drive, whereas xinO may have U: when called from a networked PC.
 ⍝ Using xinD is an alternative to referring to $citaDEVT.
-          :If 'u:'≢⎕C 2↑xinO
-          :AndIf '/devt/'≢6↑xinO
+
+          :If 'u:'≡ ⎕C 2↑xinO
+          xinD←'/devt',2↓ 1⊃⎕NPARTS ¯1↓xinO
+      :ElseIf '/devt/'≡(d←6)↑xinO
+     :OrIf '/Volumes/devt/'≡(d←14)↑xinO
+          xinD←'u:/',d↓ 1⊃⎕NPARTS xinO
+          :else 
               ns.rc←4713 ⍝ TODO: return code!
               ns.Log←⊂'xinO on unexpected location!'
               →0
           :EndIf
-          xinD←'/devt',2↓1⊃⎕NPARTS ¯1↓xinO
+          ⎕←'xinO=',xinO
           ⎕←'xinD=',xinD
           3 ⎕MKDIR xinO,'CITA'
 ⍝ 675 and below
@@ -805,21 +810,20 @@
 ⍝ use a CONFIGFILE from the parent folder of DYALOGCITAWORKDIR
           cfg←⎕NS''
           cfg.Settings←⎕NS''
-          cfg.Settings.DYALOGCITASRCDIR←FixPath xinO,'CITA'
-        ⍝   cfg.Settings.UDEBUG←'on'
+          cfg.Settings.DYALOGCITASRCDIR←1 FixPath xinD,'CITA'
           cfg.Settings.DEFAULT_PW←400
      
-          (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')'c:\git\CITA\client\RunCITA.dws '
+              (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/RunCITA.dws')
           cmdlinePre←''
-          cmdline←FixPath xinO,'CITA/client/RunCITA'    ⍝ .dws' don't specify extension to avoid failure if DWS
+          cmdline←2 FixPath xinD,'CITA/client/RunCITA'    ⍝ .dws' don't specify extension to avoid failure if DWS
           :If EnableRIDE
               cfg.Settings.RIDE_INIT←'HTTP:*:4505'
               cmdlinePre←'export TERM=dumb;'
               cmdline←'+s ',cmdline
           :EndIf
           cmdline,←' ENABLE_CEF=0'
-          cmdline,←' DYALOGSTARTUPSE=',FixPath xinO,'CITA/StartupSession/'
-          cmdline,←' COMMANDFOLDER=',FixPath xinO,'CITA/SALT/spice/'
+          cmdline,←' DYALOGSTARTUPSE=',2 FixPath xinD,'CITA/StartupSession/'
+          cmdline,←' COMMANDFOLDER=',2 FixPath xinD,'CITA/SALT/spice/'
           ⍝cmdline,← FixPath xinO,'CITA/StartupSession/'
           ⍝cmdline,←' "',(∊1 ⎕NPARTS ##.Home),'/client/RunCITA" '
 ⍝ run Jenkins job that execute commandline systems using given labels.  TODO: consider fapl here!
@@ -830,8 +834,8 @@
           :If ⎕NEXISTS file←'./jobTemplate.xml'
 ⍝          :OrIf ⎕NEXISTS file←(1⊃⎕NPARTS 1⊃2 ⎕ATX 1⊃⎕SI),'jobTemplate.xml'
           :OrIf ⎕NEXISTS file←##.Home,'StartupSession/CITA/jobTemplate.xml'
-              job←1⊃⎕NGET file
-              job←('%xinD%'⎕R xinD⍠'Regex' 0)job
+              job←1⊃⎕NGET file        
+              job←('%xinD%'⎕R(2 FixPath xinD)⍠'Regex' 0)job
               STAGES←''
               LOGFILES←⍬
               :For platform :In dyalogversions.platforms  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
@@ -873,10 +877,10 @@
                                   :For EXTRA :In ⊆EXTRAS
                                       sdir←xinO,platform,'_',version,'_',({1<≢⍵:⍵ ⋄ ''}EXTRA,'_'),EDITION[1],(⍕BIT),'/'
                                       3 ⎕MKDIR sdir,repo ⍝ create subfolder for repo
-                                      configfile←sdir,'cita.dcfg'
-                                      cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinO,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',1 FixPath sdir,repo,'/',({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
+                                      configfile←sdir,'cita.dcfg' 
+                                      cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',1 FixPath xinD,repo,'/',({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
      
-                                      LOGFILES,←⊂sdir,repo,'/CITA.log'
+                                      LOGFILES,←⊂2 FixPath sdir,repo,'/CITA.log'
                                       :If 'win'≡⎕C platform  ⍝ tweaks for win, suggested by AS, 210819
                                           cfg.Settings.DYALOG_NOPOPUPS←1   ⍝
                                           cfg.Settings.PASSEXCEPTIONSTOOPSYS←0
@@ -885,7 +889,7 @@
                                   :EndFor
                               :EndFor
                           :EndFor
-                          stage,←('%xinO%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R(2 FixPath xinO)(⍕version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(ThisStage)
+                          stage,←('%xinD%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R(2 FixPath xinD)(⍕version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(ThisStage)
                           :If 326=⎕DR∊stage ⋄ ∘∘∘
                           :EndIf
                       :EndFor
@@ -943,7 +947,6 @@
               html,←_AddTestStatusSVG 2 1↓resTab
               html,←'<br/><br/>'
               ht←resTab
-              ∘∘∘
               :For i :In ⍳≢LOGFILES
                   ⎕←i⊃platforms,' ',i⊃LOGFILES
                   r←(∪platforms)⍳platforms[i]
