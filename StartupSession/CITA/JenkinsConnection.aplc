@@ -284,8 +284,9 @@
           h.URL←(⎕JSON r.Data).executable.url,'api/json?',#.HttpCommand.UrlEncode'depth=2&tree=builds[actions[parameters[name,value]],number,result]'
           :Repeat
               r←h.Run
-          :Until (⎕JSON r.Data).building≢⊂'true'
-          :OrIf r.rc≠0
+          :Until (⎕json r.Data).building≢⊂'true'   ⍝ end if no ⎕JSON result
+          :OrIf ~r.rc∊0 1119  
+          ⍝ 1119: ERR_CLOSED: Socket closed whilst receiving data → Continue (try again)
           ns.Data←⎕JSON r.Data
      
         ⍝ # Show the console output

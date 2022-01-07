@@ -30,7 +30,7 @@
               script {
                 def citaDEVT = "/devt/"
                 sh "/opt/mdyalog/18.2/64/unicode/p8/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%"              
-                //sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
+                sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
               }
             }
           }
@@ -46,9 +46,11 @@
           }
           steps {
             script {
-              def LOCKFILE="%LOCKFILE%"
-              if (LOCKFILE != "") {
-                sh "rm $LOCKFILE"
+              catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+                def LOCKFILE="%LOCKFILE%"
+                if (LOCKFILE != "") {
+                  sh "rm $LOCKFILE"
+                }
               }
             } 
           }

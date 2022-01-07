@@ -6,7 +6,7 @@
 
     ∇ r←Version
       :Access Public Shared
-      r←'APLProcess' '2.2' '15 June 2021'
+      r←'APLProcess' '2.2' '15 June 2021'  ⍝ MUST be updated!
     ∇
 
     :Field Public Args←''
@@ -32,6 +32,11 @@
     ∇ r←IsMac
       :Access public shared
       r←'Mac'≡Platform
+    ∇
+
+    ∇ r←IsAIX
+      :Access public shared
+      r←'AIX'≡Platform
     ∇
 
     ∇ r←Platform
@@ -446,22 +451,32 @@
     ∇
 
     ∇ r←UNIXGetShortCmd pid;cmd
-      ⍝ Retrieve sort form of cmd used to start process <pid>
+      ⍝ Retrieve short form of cmd used to start process <pid>
       cmd←(1+IsMac)⊃'cmd' 'command'
-      cmd←'ps -o ',cmd,' -p ',(⍕pid),' 2>/dev/null ; exit 0'
+      :if IsAIX ⋄ cmd←'comm' ⋄ :endif
+      cmd←'-o ',cmd,' -p ',(⍕pid)   ⍝ the argument for the ps call
       :If {2::0 ⋄ IsSsh}'' ⍝ instance?
           ∘∘∘
       :Else
-    ⍝   ⎕←'UNIXGetShortCmd ',(⍕pid)
-    ⍝   ⎕←'cmd=',cmd
-    ⍝   ⎕←'dr cmd=',⎕dr cmd
-          r←⊃1↓⎕SH cmd
+      :trap 11
+          r←⊃_PS cmd  ⍝ MB: ⊃ result to avoid errors later (in UNIXIsRunning due to nested result)
+          :else 
+          r←''
+          :endtrap
       :EndIf
     ∇
 
-    ∇ r←_PS cmd;ps
-      ps←'ps ',⍨('AIX'≡3↑⊃'.'⎕WG'APLVersion')/'/usr/sysv/bin/'    ⍝ Must use this ps on AIX
-      r←1↓⎕SH ps,cmd,' 2>/dev/null; exit 0'                  ⍝ Remove header line
+    ∇ r←_PS cmd;ps;log
+      ps←'ps ',⍨IsAIX/'/usr/sysv/bin/'    ⍝ Must use this ps on AIX
+      ⍝log←'/dev/null'
+       log←'ps.log'  ⍝ MB: don't just send errors to null, catch them in a file
+      :trap 0
+      ps←ps,cmd,' 2>',log,';'
+      r←1↓r1←⎕SH ps
+      :else 
+          (⊂(⎕json⍠'Compact'0)⎕dmx)⎕nput 'ps.log' 2
+          ⎕DMX.Message ⎕signal 11
+      :endtrap
     ∇
 
     ∇ r←{quietly}_SH cmd
