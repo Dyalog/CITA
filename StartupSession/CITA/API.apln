@@ -432,6 +432,7 @@
      
               log←''
               xin←xin∆,(⍕specs.id),'/'
+              ⎕←'xin=',xin
               :Trap DEBUG↓0
                   3 ⎕MKDIR xin
               :Else
@@ -446,6 +447,7 @@
               :EndTrap
               ⎕←'xin=',xin
               ⎕←'fld=',fld
+              ⎕←'---log=',log
               :If 0≠xin _CopyFolder fld
                   (res log)←703 'Problem copying files into workdir-folder'
                   →EndStep
@@ -887,7 +889,8 @@
                                       sdir←xinO,platform,'_',version,'_',({1<≢⍵:⍵ ⋄ ''}EXTRA,'_'),EDITION[1],(⍕BIT),'/'
                                       3 ⎕MKDIR sdir,repo ⍝ create subfolder for repo
                                       configfile←sdir,'cita.dcfg' 
-                                      cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',1 FixPath xinD,repo,'/',({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
+                                      sdirD←xinD,(⍴xinO)↓sdir
+                                      cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',(1 FixPath sdirD,'/'),({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
      
                                       LOGFILES,←⊂2 FixPath sdir,repo,'/CITA.log'
                                       :If 'win'≡⎕C platform  ⍝ tweaks for win, suggested by AS, 210819
