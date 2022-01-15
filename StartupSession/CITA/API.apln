@@ -890,7 +890,7 @@
                                       3 ⎕MKDIR sdir,repo ⍝ create subfolder for repo
                                       configfile←sdir,'cita.dcfg' 
                                       sdirD←xinD,(⍴xinO)↓sdir
-                                      cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',(1 FixPath sdirD,'/'),({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
+                                      cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',(1 FixPath sdirD),({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
      
                                       LOGFILES,←⊂2 FixPath sdir,repo,'/CITA.log'
                                       :If 'win'≡⎕C platform  ⍝ tweaks for win, suggested by AS, 210819
@@ -1143,6 +1143,7 @@
       ns.log←''
       dws←cmd←''  ⍝ Arguments for constructor of APLProcess
       ns.R←0
+      DEBUG←1  ⍝ TODO: remove this!
       →(0=≢cfg_specs_interpreter)/EOF
       (cfg specs interpreter)←3↑⊆cfg_specs_interpreter
       file←specs{6::'' ⋄ ⍺⍎⍵}step
@@ -1212,7 +1213,9 @@
               cmd,←' WFR=1' ⍝ WFR=WaitForRide → if RunCITA sees this, it will wait until GhostRider has connected
           :EndIf
           port←55455
-          :If DEBUG ⋄ ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile ⋄ :EndIf
+         ⍝ :If DEBUG ⋄ 
+          ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile 
+        ⍝  :EndIf
           proc←⎕NEW ##.APLProcess(dws cmd(interpreter{0::0 ⋄ ⍺⍎⍵}'exe')('serve:127.0.0.1:',⍕port)outfile xin) ⋄ ai3←⎕AI[3]
           proc.psLogFile←xin,'/pslog.txt'
           :If GhostRiderFlag=1
