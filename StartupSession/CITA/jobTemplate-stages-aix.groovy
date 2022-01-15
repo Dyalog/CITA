@@ -6,8 +6,8 @@ stage ("aix_%CITA_VERSION%_%VERSION%") {
           //catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
           try {
             echo "NODE_NAME = ${env.NODE_NAME}"            
-            path = "/opt/mdyalog/%VERSION%/${BITS}/${EDITION}/${P}/mapl"
-            exists = fileExists(path)          
+            exePath = "/opt/mdyalog/%VERSION%/${BITS}/${EDITION}/${P}/mapl"
+            exists = fileExists(exePath)          
             if (!exists) {
               error "Found no interpreter for ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
             }
@@ -24,9 +24,9 @@ stage ("aix_%CITA_VERSION%_%VERSION%") {
             cmdline = "%CMDLINE% citaDEVT=${citaDEVT} USERCONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
             cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
 
-            echo "Launching $cmdlinePre $path $cmdline "
-            // sh "$path $cmdline" 
-            rcj =  sh(script: "$cmdlinePre $path $cmdline" , returnStatus: true)
+            echo "Launching $cmdlinePre $exePath $cmdline "
+            // sh "$exePath $cmdline" 
+            rcj =  sh(script: "$cmdlinePre $exePath $cmdline" , returnStatus: true)
             echo "returncode=$rcj"      
             exists = fileExists("${testPath}CITA.log.ok")     
             if (exists) {

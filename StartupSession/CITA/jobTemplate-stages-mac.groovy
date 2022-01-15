@@ -4,18 +4,18 @@ stage ("mac_%CITA_VERSION%_%VERSION%") {
     // catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
     try {
       echo "NODE_NAME = ${env.NODE_NAME}"            
-      path = "/Dyalog/Dyalog-%VERSION%.app/Contents/Resources/Dyalog/mapl"
-      exists = fileExists(path)      
+      exePath = "/Dyalog/Dyalog-%VERSION%.app/Contents/Resources/Dyalog/mapl"
+      exists = fileExists(exePath)      
       if (exists) {
-        echo "PLATFORM=mac, path=${path}: File exists!"
+        echo "PLATFORM=mac, exePath=${exePath}: File exists!"
       } else {
-        echo "PLATFORM=mac, path=${path}: File does not exist, trying another path"
-        path = "/Applications/Dyalog-%VERSION%.app/Contents/Resources/Dyalog/mapl"
-        exists = fileExists(path)          
+        echo "PLATFORM=mac, exePath=${exePath}: File does not exist, trying another exePath"
+        exePath = "/Applications/Dyalog-%VERSION%.app/Contents/Resources/Dyalog/mapl"
+        exists = fileExists(exePath)          
         if (exists) {
-          echo "PLATFORM=mac, path=${path}: File exists!"
+          echo "PLATFORM=mac, exePath=${exePath}: File exists!"
         } else {
-          error "PLATFORM=mac, path=${path}: File does not exist, giving it up!"
+          error "PLATFORM=mac, exePath=${exePath}: File does not exist, giving it up!"
         }
       }
       testPath="%xinD%mac_%VERSION%_u64/"
@@ -35,9 +35,9 @@ stage ("mac_%CITA_VERSION%_%VERSION%") {
       CITAlog="${testPath}CITA.log"
       echo "cmdline=$cmdline"
       echo "CITAlog=$CITAlog"
-      echo "Launching $path $cmdline"
-      //sh "$path $cmdline"
-      rcj = sh(script: "$path $cmdline" , returnStatus: true)
+      echo "Launching $exePath $cmdline"
+      //sh "$exePath $cmdline"
+      rcj = sh(script: "$exePath $cmdline" , returnStatus: true)
       echo "CITAlog=$CITAlog|${CITAlog}"
       echo "rcj=$rcj"
       sh "ls ${testPath}"

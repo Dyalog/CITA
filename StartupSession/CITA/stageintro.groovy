@@ -5,5 +5,5 @@ def citaDEVT="/devt/"
 def testPath=""
 def CITAlog=""
 def cmdline = '%CMDLINE%'
-def path=""
+def exePath=""
 def exists=0

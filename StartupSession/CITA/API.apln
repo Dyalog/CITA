@@ -444,6 +444,8 @@
                       log,←⊂'** Attempt to use counter (',(⍕cnt),') failed as well! Giving up.' ⋄ →EndStep
                   :EndTrap
               :EndTrap
+              ⎕←'xin=',xin
+              ⎕←'fld=',fld
               :If 0≠xin _CopyFolder fld
                   (res log)←703 'Problem copying files into workdir-folder'
                   →EndStep
@@ -1359,6 +1361,7 @@
       :For (n t h) :In ↓[1]↑0 1 6(⎕NINFO ⎕OPT('Wildcard' 1)('Recurse' 1))(from,'*')   ⍝ get name, type & hidden-status
           :If ~∨/'.git'⍷n  ⍝ exclude .git*!
               hf,←(h∧t=1)/⊂n ⍝ list of hidden directories
+              ⎕←'_CopyFolder, n,t,h= ',n,',',t,',',h                   
               :If h=1 ⋄ :Continue ⋄ :EndIf
               :If 0<≢hf ⋄ :AndIf 1∊hf{⍺≡(≢⍺)↑⍵}¨⊂n ⋄ :Continue ⋄ :EndIf ⍝ file from a hidden folder
               :If 1=t  ⍝ directory
@@ -1376,6 +1379,7 @@
               :Else
                   :If ⎕NEXISTS to,(≢from)↓n
                       ⎕←'Paranoia justified - attempted to re-copy "',from,'" to "',to,'"'
+                      ⎕←'to,(≢from)↓n = ',to,(≢from)↓n                   
                       :Continue
                   :EndIf
                   :If ~⎕NEXISTS td←1⊃⎕NPARTS to,(≢from)↓n  ⍝ does the target dir exist?

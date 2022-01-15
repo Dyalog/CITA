@@ -12,13 +12,36 @@ stage ("win_%VERSION%") {
               path = "${env.PROGRAMFILES}\\Dyalog\\Dyalog %VERSION% ${EDITION}\\dyalog.exe"
 
           }
-              path = "/Program Files/Dyalog/Dyalog %VERSION% ${EDITION}/dyalog.exe"
+ 
+           path = "/Program Files/Dyalog/Dyalog 18.2 Unicode/dyalog.exe"
           exists = fileExists(path)          
           if (exists) {
             echo "PLATFORM=win, path=${path}: File exists!"
           } else {
-            error "Found no interpreter for ${E}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
+            echo "File $path does not exist"
+            //error "Found no interpreter for ${E}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
           }
+          path = "/Windows/explorer.exe"
+          exists = fileExists(path)          
+          if (exists) {
+            echo "PLATFORM=win, path=${path}: File exists!"
+          } else {
+            echo "File $path does not exist"
+            //error "Found no interpreter for ${E}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
+          }
+
+
+          path = "/Program Files/Dyalog/Dyalog %VERSION% ${EDITION}/dyalog.exe"
+          exists = fileExists(path)          
+          if (exists) {
+            echo "PLATFORM=win, path=${path}: File exists!"
+          } else {
+            echo "File $path does not exist"
+            //error "Found no interpreter for ${E}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
+          }
+
+
+
           testPath="%xinD%win_%VERSION%_${E}${BITS}/"
           cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
             cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
