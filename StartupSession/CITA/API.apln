@@ -922,7 +922,7 @@
               info'Wrote job to ',file
               jenk←⎕NEW ##.JenkinsConnection
               jenk.(Debug Cleanup)←1 0
-              jenk.LOCKFILE←{⍵(FixPath {('/'@('\'∘=))⍵}⍵)}wd,jobName,'.lock-jenkins'
+              jenk.LOCKFILE←{⍵(2 FixPath {('/'@('\'∘=))⍵}⍵)}wd,jobName,'.lock-jenkins'
             ⍝   lb←⊃⌽'/'(≠⊆⊢)1⊃⎕NPARTS ¯1↓xinO
               info'Launching job'
               jns←file jenk.RunJob jobName
