@@ -30,6 +30,7 @@
                 'CITA'⎕SE.⎕ns''  
                 ⎕se.Link.Import  ⎕se.CITA Home
                 ⎕←'Link.imported ⎕SE.CITA from ',Home 
+                ⎕se.CITA.DYALOGCITASRCDIR←Home
               :else 
                 ⎕←'Computed home-folder for CITA ("',Home,'" did not exist - please contact mbaas@dyalog.com!'
                 →0
