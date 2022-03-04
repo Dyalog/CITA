@@ -227,7 +227,7 @@
           cv←CITA_VERSION
           bin←('%CITA_VERSION%'⎕R cv⍠('Regex' 0))bin
       :EndIf
-      bin←('%LOCKFILE%'⎕R (2⊃LOCKFILE)⍠('Regex' 0))bin
+      bin←('%LOCKFILE%'⎕R(2⊃LOCKFILE)⍠('Regex' 0))bin
  ⍝     ⎕←'file=',file
 ⍝      (⎕lc[1]+1)⎕stop 1⊃⎕si
       bin←('&(?![a-z]*;)'⎕R'&amp;')bin
@@ -284,8 +284,8 @@
           h.URL←(⎕JSON r.Data).executable.url,'api/json?',#.HttpCommand.UrlEncode'depth=2&tree=builds[actions[parameters[name,value]],number,result]'
           :Repeat
               r←h.Run
-          :Until (⎕json r.Data).building≢⊂'true'   ⍝ end if no ⎕JSON result
-          :OrIf ~r.rc∊0 1119  
+          :Until (⎕JSON r.Data).building≢⊂'true'   ⍝ end if no ⎕JSON result
+          :OrIf ~r.rc∊0 1119
           ⍝ 1119: ERR_CLOSED: Socket closed whilst receiving data → Continue (try again)
           ns.Data←⎕JSON r.Data
      
@@ -311,10 +311,10 @@
           ns.log←'Unexpected rc from "build":' ⋄ ⎕←r
           ns.rc←r.rc
       :EndIf
-      :if ''≢1⊃LOCKFILE
-      :andif ⎕nexists 1⊃LOCKFILE
-     ⎕ndelete 1⊃LOCKFILE
-     :endif
+      :If ''≢1⊃LOCKFILE
+      :AndIf ⎕NEXISTS 1⊃LOCKFILE
+          ⎕NDELETE 1⊃LOCKFILE
+      :EndIf
     ∇
     :endsection
 
@@ -323,7 +323,7 @@
       :Access public shared
       :If 0=≢jobFile
           :If ⎕NEXISTS file←'./jobTemplate.xml'
-          :OrIf ⎕NEXISTS file←(1⊃⎕NPARTS 1⊃2 ⎕ATX 1⊃⎕SI),'jobTemplate.xml'
+          :OrIf ⎕NEXISTS file←(1⊃⎕NPARTS 50 ⎕ATX 1⊃⎕SI),'jobTemplate.xml'
       ⍝ nothing to do
           :Else
               ⎕←'Could not find jobTemplate (jobFile empty, file=',file,')'

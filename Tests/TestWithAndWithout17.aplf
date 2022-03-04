@@ -1,4 +1,4 @@
- r←TestWithAndWithout17;cnt;wd;res;expect;wd∆;dir;test4;rc;log;params;expect_rc
+﻿ r←TestWithAndWithout17;cnt;wd;res;expect;wd∆;dir;test4;rc;log;params;expect_rc
 ⍝ this runs a test which is supposed to fail on v17 against all interpreters andf checks if the produce the expected result.
 ⍝ We're using DTest here to launch CITA which uses plain functions and the "CITA Framework for tests". And we're also using the API
 ⍝ to launch the same tests. This "main test" is only run in the current interpreter - the other tests do spawn off
@@ -15,7 +15,7 @@
      :If ##.verbose
          ⎕←'Executing local test with params ',params
      :EndIf
-     {}⎕SE.UCMD'res←ExecuteLocalTest ',params
+     ⎕SE.UCMD'res←ExecuteLocalTest ',params
 
    ⍝ now "res" has the log
    ⍝ examine whether it tells the expected success story ;)
@@ -45,9 +45,10 @@
      :If ##.verbose
          ⎕←'Executing local test against the local interpreters filtered using',f
      :EndIf
-     {}⎕SE.UCMD'res←ExecuteLocalTest ',params
+     ⎕SE.UCMD'res←ExecuteLocalTest ',params
      :If '─-'[⎕IO+expect]Check 1⊃∊res
-         →fail Because'Log does not show expected indicator for ',((⎕IO+expect)⊃'successful' 'failed'),' tests: ',(⎕UCS 13),∊res,¨⎕UCS 13
+         ⎕TRAP←0/⎕TRAP
+         →fail Because'Log does not show expected indicator for ',((⎕IO+expect)⊃'successful' 'failed'),' tests: ',(⎕UCS 13),res,⎕UCS 13
      :ElseIf ##.verbose
          ⎕←∊(⎕UCS 13),¨¯4↑(⎕UCS 13)(≠⊆⊢)res
      :EndIf

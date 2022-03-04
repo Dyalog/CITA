@@ -1,5 +1,5 @@
 stage ("win_%VERSION%") {
-  node ("win&&%VERSION%") {
+  node ("CITA&&Windows") {
     [%BITS%].each { BITS -> 
       [%EDITIONS%].each { EDITION ->
         // catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {

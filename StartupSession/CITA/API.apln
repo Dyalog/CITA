@@ -311,7 +311,7 @@
       resTab←1 1⍴' '  ⍝ tests x Interpreters - a summary table of test-results  - first row/col contains ids/names
       showedIO←0   ⍝ when we display test-counts instead of ids, give info about IO=1 (this var ensures we're doing it once only!)
       rcTest←¯1  ⍝ ¯1: no tests executed
-      :If (~(⎕NEXISTS⎕OPT 'Wildcard' 1)fl)∨'cita.json'≢9↑⎕C∊1↓⎕NPARTS fl
+      :If (~(⎕NEXISTS ⎕OPT'Wildcard' 1)fl)∨'cita.json'≢9↑⎕C∊1↓⎕NPARTS fl
           ns.(rc Log)←700 'CITA.JSON[5] not found'
           →0
       :EndIf
@@ -379,7 +379,7 @@
                       :Else
                           V←interpreter.version
                       :EndIf
-     
+                      ⍝ V=test engine, v=specs
                       plus←0  ⍝ did we see a +sign?
                       :If (⎕DR' ')=⎕DR v  ⍝ , separated list or a single version, possibly with "+
                           v←','(≠⊆⊢)v
@@ -387,7 +387,7 @@
                       :Else
                           (v plus dot)←↓⍉↑{' '≠⍥⎕DR ⍵:⍵,0 0 ⋄ (p d)←'+.'∊⍵ ⋄ (⊃2⊃⎕VFI ⍵~'+'),p,d}¨,v
                       :EndIf
-                      :If ~∨/(V∊v),(plus∧v<V),(dot∧V∊⍥⌊v)
+                      :If ~∨/(V∊v),(plus∧v<V),((~dot)∧V∊⍥⌊v)
                           :If interpreter≡0
                               Log,←⊂'Current interpreter (v=',(⍕V),') rejected by test which selected "',(⍕specs.dyalogversions),'"'
                           :Else
@@ -395,6 +395,7 @@
                           :EndIf
                           →EndForSpec
                       :EndIf
+                      ⎕←'V=',V,', v=',v
                   :EndIf
               :EndIf
               :If 2=specs.⎕NC'bits'
@@ -483,7 +484,8 @@
                               ⎕←'Assigned nsTest: '
                               ⎕←⎕JSON nsTest
                           :EndIf
-                          :If ⎕NEXISTS(1⊃⎕NPARTS nsJob.outfile),'MemRep.dcf'
+                          :If 2=nsJob.⎕NC'outfile'
+                          :AndIf ⎕NEXISTS(1⊃⎕NPARTS nsJob.outfile),'MemRep.dcf'
                               t←((1⊃⎕NPARTS nsJob.outfile),'MemRep.dcf')⎕FSTIE 0
                               nsTest.(ai2 ai3)←⎕FREAD t,2
                               nsTest.MemRep←⎕FREAD t,1
@@ -494,29 +496,29 @@
                       :CaseList 0,(((⊂step)∊'setup' 'teardown')/4),(((⊂step)∊'test' 'teardown')/1)
                           R←0 '' ⍝ we do nothing here, but may need to catch these cases...(and continue to the next step)
                       :Case 1    ⍝ ...whereas we will :Leave in all other cases...
-                          jobR←rc(step,' (using "',fl,'") failed')
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}step,' (using "',fl,'") failed')
                           :Leave
                       :Case 2
-                          jobR←rc(step,' (using "',fl,'")  did not end properly (Timeout Error)')
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}step,' (using "',fl,'")  did not end properly (Timeout Error)')
                           :Leave
                       :Case 3
-                          job←rc('No statusfile (CITA.',step,'.[ok|err]) found after ',step,' ended')
+                          job←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}'No statusfile (CITA.',step,'.[ok|err]) found after ',step,' ended')
                           :Leave
                       :Case 4
-                          jobR←rc('Invalid or non-existent file "',fl,'" for step "',step,'"')
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}'Invalid or non-existent file "',fl,'" for step "',step,'"')
                           jlog←''  ⍝ don't need joblog - it has no additional info
                           :Leave
                       :Case 5
-                          jobR←rc('APL Error executing code from ',fl)
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}'APL Error executing code from ',fl)
                           :Leave
                       :Case 6
-                          jobR←rc(step,' (using "',fl,'") ended with APLCORE!')
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}step,' (using "',fl,'") ended with APLCORE!')
                           :Leave
                       :Case 7
-                          jobR←rc(step,' (using "',fl,'") ended with WS FULL!')
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}step,' (using "',fl,'") ended with WS FULL!')
                           :Leave
                       :Case 8
-                          jobR←rc(step,' (using "',fl,'") probably had issue with Classic/Unicode-compatibility')
+                          jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}step,' (using "',fl,'") probably had issue with Classic/Unicode-compatibility')
                           :Leave
                       :EndSelect
      
@@ -576,7 +578,6 @@
                           :AndIf 0<≢⊃0(⎕NINFO ⎕OPT 1)item,'/*'   ⍝ and there are still files in it
                               del←del~⊂item                  ⍝ do not attempt to delete it
                           :Else
-                              :If DEBUG ⋄ ⎕←'⎕NDELETE ',item ⋄ :EndIf
                               ⎕NDELETE item
                           :EndIf
                       :EndIf
@@ -588,22 +589,24 @@
                   →EndForSpec
               :EndTrap
      EndForSpec:
-              (resNS←'t_',(2⊃⎕NPARTS ¯1↓xin))Results.⎕NS''
-              resNS←Results⍎resNS
-              resNS.Log←2⊃jobR
-              resNS.rc←rcTest
+              :If 0<≢Results.⎕NL ¯2   ⍝ if anything was tested...
+                  (resNS←'t_',(2⊃⎕NPARTS ¯1↓xinO))Results.⎕NS''
+                  resNS←Results⍎resNS
+                  resNS.Log←2⊃jobR
+                  resNS.rc←rcTest
               ⍝resNS⎕ns'nsTest'
-              ⎕←'resNS vor merge:'
-              ⎕←cJSON resNS
-              resNS{(⊂⍺ ⍵){⍎'(1⊃⍺).',⍵,'←(2⊃⍺)⍎⍵'}¨⍵.⎕NL ¯2}nsTest
-              ⎕←'resNS nach merge:'
-              ⎕←cJSON resNS
-              :If 'test'≡step
-              :AndIf 9=⎕NC'nsTest'
-                  ⎕←⎕JSON nsTest
-              :AndIf 2=nsTest.⎕NC'outfile'
-                  ⎕←(≢xinO)↓nsTest.outfile
-                  resNS.outfile←(≢xinO)↓nsJob.outfile
+                  ⎕←'resNS vor merge:'
+                  ⎕←cJSON resNS
+                  resNS{(⊂⍺ ⍵){⍎'(1⊃⍺).',⍵,'←(2⊃⍺)⍎⍵'}¨⍵.⎕NL ¯2}nsTest
+                  ⎕←'resNS nach merge:'
+                  ⎕←cJSON resNS
+                  :If 'test'≡step
+                  :AndIf 9=⎕NC'nsTest'
+                      ⎕←⎕JSON nsTest
+                  :AndIf 2=nsTest.⎕NC'outfile'
+                      ⎕←(≢xinO)↓nsTest.outfile
+                      resNS.outfile←(≢xinO)↓nsJob.outfile
+                  :EndIf
               :EndIf
           :EndFor
      NextInt:
@@ -613,7 +616,8 @@
           Log,←↓⍕resTab
           Log,←_AddLegend resTab
       :EndIf
-      :If ∨/1 'r'∊keep
+      :if 2=⎕nc'keep'
+      :andIf ∨/'r'∊keep
           Log,←⊂'Logs (including this log) can be found in ',xin∆,' and subfolders'
           (⊂Log)⎕NPUT xin∆,'CITA.log'
       :EndIf
@@ -632,7 +636,7 @@
       {}⎕SE.UCMD'output.find ',4↓x
     ∇
 
-    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht
+    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD
 ⍝:: Test a remote GitHub-repository
 ⍝?: Test a remote GitHub-repository
 ⍝?:
@@ -748,21 +752,21 @@
           :While ⎕NEXISTS xinO   ⍝ if that folder exists...
               xinO←{~'_'∊¯3↑⍵:⍵,'_1' ⋄ i←⌈/⍸⍵='_' ⋄ ⍵[⍳i],⍕1+2⊃⎕VFI i↓⍵}xinO    ⍝ append a counter to make it unique...
           :End
-          :Trap 0
-              3 ⎕MKDIR xinO   ⍝ create it
-          :Else
-              ⎕←'Error while attempting to create subfolder for test: ',xinO
-              ⎕←↑⎕DM
-          :EndTrap
+        ⍝   :Trap 0
+          3 ⎕MKDIR xinO   ⍝ create it
+        ⍝   :Else
+        ⍝       ⎕←'Error while attempting to create subfolder for test: ',xinO
+        ⍝       ⎕←↑⎕DM
+        ⍝   :EndTrap
 ⍝ Variable xinD has parent of xinO, but based on the /devt/-drive, whereas xinO may have U: when called from a networked PC.
 ⍝ Using xinD is an alternative to referring to $citaDEVT.
-
-          :If 'u:'≡ ⎕C 2↑xinO
-          xinD←'/devt',2↓ 1⊃⎕NPARTS ¯1↓xinO
-      :ElseIf '/devt/'≡(d←6)↑xinO
-     :OrIf '/Volumes/devt/'≡(d←14)↑xinO
-          xinD←'u:/',d↓ 1⊃⎕NPARTS xinO
-          :else 
+     
+          :If 'u:'≡⎕C 2↑xinO
+              xinD←'u:',2↓xinO
+          :ElseIf '/devt/'≡(d←6)↑xinO
+          :OrIf '/Volumes/devt/'≡(d←14)↑xinO
+              xinD←'u:/',d↓1⊃⎕NPARTS xinO
+          :Else
               ns.rc←4713 ⍝ TODO: return code!
               ns.Log←⊂'xinO on unexpected location!'
               →Exit
@@ -824,9 +828,12 @@
           cfg.Settings.DYALOGCITASRCDIR←1 FixPath xinD,'CITA'
           cfg.Settings.DEFAULT_PW←400
      
-              (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/RunCITA.dws')
+          (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/RunCITA.dws')
           cmdlinePre←''
           cmdline←2 FixPath xinD,'CITA/client/RunCITA'    ⍝ .dws' don't specify extension to avoid failure if DWS
+          600⌶1
+          ∘∘∘
+          600⌶0
           :If EnableRIDE
               cfg.Settings.RIDE_INIT←'HTTP:*:4505'
               cmdlinePre←'export TERM=dumb;'
@@ -845,7 +852,7 @@
           :If ⎕NEXISTS file←'./jobTemplate.xml'
 ⍝          :OrIf ⎕NEXISTS file←(1⊃⎕NPARTS 1⊃2 ⎕ATX 1⊃⎕SI),'jobTemplate.xml'
           :OrIf ⎕NEXISTS file←##.Home,'StartupSession/CITA/jobTemplate.xml'
-              job←1⊃⎕NGET file        
+              job←1⊃⎕NGET file
               job←('%xinD%'⎕R(2 FixPath xinD)⎕OPT'Regex' 0)job
               STAGES←''
               LOGFILES←⍬
@@ -888,11 +895,12 @@
                                   :For EXTRA :In ⊆EXTRAS
                                       sdir←xinO,platform,'_',version,'_',({1<≢⍵:⍵ ⋄ ''}EXTRA,'_'),EDITION[1],(⍕BIT),'/'
                                       3 ⎕MKDIR sdir,repo ⍝ create subfolder for repo
-                                      configfile←sdir,'cita.dcfg' 
+                                      configfile←sdir,'cita.dcfg'
                                       sdirD←xinD,(⍴xinO)↓sdir
                                       cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',(1 FixPath sdirD),({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
      
-                                      LOGFILES,←⊂2 FixPath sdir,repo,'/CITA.log'
+                                      ⍝LOGFILES,←⊂sdir,repo,'/CITA.log'
+                                      LOGFILES,←⊂sdir,'/CITA.log'
                                       :If 'win'≡⎕C platform  ⍝ tweaks for win, suggested by AS, 210819
                                           cfg.Settings.DYALOG_NOPOPUPS←1   ⍝
                                           cfg.Settings.PASSEXCEPTIONSTOOPSYS←0
@@ -922,7 +930,7 @@
               info'Wrote job to ',file
               jenk←⎕NEW ##.JenkinsConnection
               jenk.(Debug Cleanup)←1 0
-              jenk.LOCKFILE←{⍵(2 FixPath {('/'@('\'∘=))⍵}⍵)}wd,jobName,'.lock-jenkins'
+              jenk.LOCKFILE←{⍵(2 FixPath{('/'@('\'∘=))⍵}⍵)}wd,jobName,'.lock-jenkins'
             ⍝   lb←⊃⌽'/'(≠⊆⊢)1⊃⎕NPARTS ¯1↓xinO
               info'Launching job'
               jns←file jenk.RunJob jobName
@@ -971,15 +979,19 @@
                       s←(⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET(i⊃LOGFILES),'.json'
                       :For t :In s.⎕NL ¯9
                           c←(↓[1]vt)⍳⊂versions[i],⊂2↓t
-                        ⍝   :Trap 6
-                          ht[2+r;1+c]←⊂(s⍎t).outfile
-                          resTab[2+r;1+c]←ResultSymbols[1+(s⍎t).rc;1]
-                        ⍝   :Else
-                        ⍝       ∘∘∘
-                        ⍝       ht[2+r;1+c]←LOGFILES[i]
-                        ⍝   :EndTrap
+                          :Trap 6
+                              ht[2+r;1+c]←⊂(s⍎t).outfile
+                              resTab[2+r;1+c]←ResultSymbols[1+(s⍎t).rc;1]
+                          :Else
+                              ∘∘∘
+                              ht[2+r;1+c]←LOGFILES[i]
+                          :EndTrap
                       :EndFor
                   :Else
+                      ⎕←'Logfile not found: ',(i⊃LOGFILES),'.json'
+                      600⌶1
+                      ∘∘∘
+                      600⌶0
                       :If DEBUG
                           ⎕←':trapped something!'
                           ⎕←cJSON ⎕DMX
@@ -1109,15 +1121,14 @@
           args,←{(0<≢⍵)/' -int',(⍵≢1)/'=',⍵}''arg.Switch'int'
           args,←' -ucmd=0 -workdir="',wd,'"'
           ns←ExecuteLocalTest(1⊃fl),args   ⍝ pass-through the result...
-          (⎕JSON ⎕OPT'HighRank' 'Split')ns
       :EndIf
      Exit:
       ns.Runtime←⎕AI[3]-_ai3
-      info'Runtime = ',ns.Runtime
+      info'Runtime = ',{(⍕⍵),', approx. ',(⍕⌊⍵÷60000),' min'}ns.Runtime
       :If ⎕NEXISTS xinO,'CITA.log.html'
      ⍝ it might be unneccessarily accurate to really compute the timing here (and then inject it into the file), but hey...
           r←1⊃⎕NGET xinO,'CITA.log.html'
-          r←('%ms'⎕R({p←⌈10⍟⍵ ⋄ (,('CI',(⍕p+⌊p÷3),',< ms>')⎕FMT ⍵),', approx. ',(⍕⌈⍵÷60000),' mins'}ns.Runtime)⎕OPT'Regex' 0)r
+          r←('%ms'⎕R({p←⌈10⍟⍵ ⋄ (,('CI',(⍕p+⌊p÷3),',< ms>')⎕FMT ⍵),', approx. ',(⍕⌊⍵÷60000),' min'}ns.Runtime)⎕OPT'Regex' 0)r
           (⊂r)⎕NPUT(xinO,'CITA.log.html')1
       :EndIf
       (⊂(⎕JSON ⎕OPT('Compact' 0)('HighRank' 'Split'))ns)⎕NPUT xinO,'CITA.log.json'
@@ -1151,7 +1162,11 @@
       isDTest←0   ⍝ do we have a ]DTest-Call?
       :If ~⎕NEXISTS xin,file
           ns.R←4
-          ns.log←'File "',xin,file,'" not found!'
+          :If (⎕C∊1 ⎕NPARTS file)≡⎕C file
+              ns.log←'Absolute reference to file "',file,'" found in specs for tests - CITA expects paths that are relative within the repository!'
+          :Else
+              ns.log←'File "',xin,file,'" not found!'
+          :EndIf
           →EndJob
       :EndIf
      
@@ -1213,8 +1228,8 @@
               cmd,←' WFR=1' ⍝ WFR=WaitForRide → if RunCITA sees this, it will wait until GhostRider has connected
           :EndIf
           port←55455
-         ⍝ :If DEBUG ⋄ 
-          ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile 
+         ⍝ :If DEBUG ⋄
+          ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile
         ⍝  :EndIf
           proc←⎕NEW ##.APLProcess(dws cmd(interpreter{0::0 ⋄ ⍺⍎⍵}'exe')('serve:127.0.0.1:',⍕port)outfile xin) ⋄ ai3←⎕AI[3]
           proc.psLogFile←xin,'/pslog.txt'
@@ -1322,7 +1337,6 @@
           log←''
           cnt←0
           rspec←⍬
-     
           specs←_FoldJson 1⊃⎕NGET fl
           :If 2=specs.⎕NC'defaults'
               specs.(defaults{(⊂⍺ ⍵){(s t)←⍺ ⋄ 0=t.⎕NC ⍵:⍎'t.',⍵,'←s.',⍵}¨⍺.⎕NL-2}¨tests)    ⍝ Apply defaults to all tests
@@ -1337,6 +1351,10 @@
             ⍝ set defaults for optional entries Setup/Teardown
               :If 0=spec.⎕NC'disabled'
               :OrIf ~(⎕C spec.disabled)∊(⊂'true')'yes' 1
+                  ⍝ copy default variables from root into namespaces below tests
+                  :For n :In (specs.⎕NL ¯2)~⊂'tests'
+                      spec←(⊂specs n){(ns var)←⍺ ⋄ 0=⍵.⎕NC var:⍵⊣⍎'⍵.',var,'←ns.',var ⋄ ⍵}¨spec
+                  :EndFor
                   spec←(⊂'setup'){0=⍵.⎕NC ⍺:⍵⊣⍵⍎⍺,'←''''' ⋄ ⍵}¨spec
                   spec←(⊂'teardown'){0=⍵.⎕NC ⍺:⍵⊣⍵⍎⍺,'←''''' ⋄ ⍵}¨spec
                   spec.secondstimeout←spec{6::⍵ ⋄ ⍺.secondstimeout}Timeout
@@ -1367,7 +1385,7 @@
       :For (n t h) :In ↓[1]↑0 1 6(⎕NINFO ⎕OPT('Wildcard' 1)('Recurse' 1))(from,'*')   ⍝ get name, type & hidden-status
           :If ~∨/'.git'⍷n  ⍝ exclude .git*!
               hf,←(h∧t=1)/⊂n ⍝ list of hidden directories
-              ⎕←'_CopyFolder, n,t,h= ',n,',',t,',',h                   
+            ⍝   ⎕←'_CopyFolder, n,t,h= ',n,',',t,',',h
               :If h=1 ⋄ :Continue ⋄ :EndIf
               :If 0<≢hf ⋄ :AndIf 1∊hf{⍺≡(≢⍺)↑⍵}¨⊂n ⋄ :Continue ⋄ :EndIf ⍝ file from a hidden folder
               :If 1=t  ⍝ directory
@@ -1385,7 +1403,7 @@
               :Else
                   :If ⎕NEXISTS to,(≢from)↓n
                       ⎕←'Paranoia justified - attempted to re-copy "',from,'" to "',to,'"'
-                      ⎕←'to,(≢from)↓n = ',to,(≢from)↓n                   
+                      ⎕←'to,(≢from)↓n = ',to,(≢from)↓n
                       :Continue
                   :EndIf
                   :If ~⎕NEXISTS td←1⊃⎕NPARTS to,(≢from)↓n  ⍝ does the target dir exist?

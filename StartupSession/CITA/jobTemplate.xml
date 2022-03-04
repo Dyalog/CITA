@@ -47,6 +47,10 @@
           steps {
             script {
               catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+                def citaDEVT = "/devt/"
+                // permissions for everything in the test's folder
+                sh "chmod -R 755 %xinD%"
+                // and now delete the lockfile
                 def LOCKFILE="%LOCKFILE%"
                 if (LOCKFILE != "") {
                   sh "rm $LOCKFILE"

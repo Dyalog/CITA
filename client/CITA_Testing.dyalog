@@ -3,11 +3,11 @@
     ∇ Write2Log txt;file
       ⍝ needs name of test
       file←GetCITA_Log
-      :If ~qNEXISTS file
-          txt qNPUT file
+      :If ~⎕NEXISTS file
+          txt ⎕NPUT file
       :Else ⍝ q&d "append":
-          old←qNGET file
-          (old,⊂txt)qNPUT file 1
+          old←1⊃⎕NGET file
+          (⊂old,⊂txt)⎕NPUT file 1
       :EndIf
     ∇
 
@@ -39,10 +39,9 @@
           status←1∊status
       :EndIf
       status←(1+status)⊃'err' 'ok'
-    ⍝ uses qNPUT (which is brought in with GetToolsForCITA to write a file on all APL-Versions)
     ⍝ we're intentionally not passing ⍵[2]as 1 to force overwrite - because this is supposed to be called once only!
     ⍝ So if it crashes...that is well deserved...
-      msg qNPUT file,'.',status
+      (⊂msg) ⎕NPUT file,'.',status
       ⎕off
     ∇
 

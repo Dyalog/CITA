@@ -105,7 +105,7 @@
 
     ∇ Start(ws args rt);psi;pid;cmd;host;port;keyfile;exe;z;output
       (Ws Args)←ws args
-      args,←' RIDE_INIT="',RideInit,'"',(0≠≢RideInit)/' RIDE_SPAWNED=1' ⍝ NB Always set RIDE_INIT to override current process setting
+      args,'RIDE_INIT="',RideInit,'"',((0≠≢RideInit)/' RIDE_SPAWNED=1'),' ',args ⍝ NB Always set RIDE_INIT to override current process setting
      
       :If ~0 2 6∊⍨10|⎕DR rt ⍝ if rt is character or nested, it defines what to start
           Exe←(RunTimeName⍣rt)GetCurrentExecutable ⍝ else, deduce it

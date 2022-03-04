@@ -10,7 +10,7 @@
         "aix",
         "mac",
         "pi",
-        //"win",
+        "win",
         //"linux",
         
     ],

@@ -1,7 +1,8 @@
-﻿ lx arg;v;Env;subj;ext;r;z;s;cmd;y;log;wsFullReport;⎕RL;⎕ML;⎕IO;rc;path;NL;CITA_Log;dmx
+﻿ lx arg;v;Env;subj;ext;r;z;s;cmd;y;log;wsFullReport;⎕RL;⎕ML;⎕IO;rc;path;NL;CITA_Log;dmx;DEBUG;res;cf;d;Because;Check;Fail;HandleError;IsNotElement;eis
  ⍝ OFF with returncode 42: all is well, 43: error, 44: WS
 ⍝ (0,⍳300)⎕TRACE'lx'  ⍝ trace is buggy - don't use it! (need http://mantis.dyalog.com/view.php?id=19349 to be fixed...)
  Env←{2 ⎕NQ'.' 'GetEnvironment'⍵}  ⍝ get environment variable or cmdline
+:if 0<≢Env'RunCITAlog'⋄ ⎕SE.RunCITA∆OldLog←⎕SE ⎕WG'Log'⋄:endif
  DEBUG←{((,'0')≢⍵)∧0<≢⍵:1 ⋄ 0}Env'CITADEBUG'
  :If DEBUG ⋄ ⎕←'TS.Start=',⎕TS ⋄ :EndIf
  :If DEBUG ⋄ ⎕←'PPID=' ⋄ ⎕SH'echo $PPID' ⋄ :EndIf
@@ -54,7 +55,7 @@
          ⎕←'SALT.Set ',d
          {}⎕SE.SALT.Set d
      :Else
-         ⍎'(qJSON⎕OPT''Compact''0) ⎕dmx'
+         ⍎'(⎕JSON⎕OPT''Compact''0) ⎕dmx'
      :EndTrap
      :If DEBUG ⋄ ⎕←'SALT.set cmddir=',⎕SE.SALT.Set'cmddir' ⋄ :EndIf
      :If DEBUG ⋄ ⎕←'lx. citaDEVT=',Env'citaDEVT' ⋄ :EndIf
@@ -63,13 +64,15 @@
      :If 'on'≡⎕SE.SALTUtils.lCase Env'UDEBUG'
      :OrIf DEBUG
          ⎕SE.UCMD'UDEBUG ON'
-         :else
+     :Else
          ⎕SE.UCMD'UDEBUG OFF'
      :EndIf
      :If DEBUG ⋄ ⎕←'UDEBUG=',(1+⎕SE.SALTUtils.DEBUG)⊃'OFF' 'ON' ⋄ :EndIf
      :If DEBUG ⋄ ⎕←'Setting OUTPUT.Find' ⋄ :EndIf
      :Trap 0   ⍝ might not be present on older versions...
-         :If DEBUG ⋄ ⎕←⎕SE.UCMD'output.find on -includequadoutput -timestamp' ⋄ :EndIf
+        ⍝  :If DEBUG ⋄
+         ⎕←⎕SE.UCMD'output.find on -includequadoutput -ts' ⋄
+        ⍝   :EndIf
      :Else
          ⎕←↑⎕DM
          ⍎'(⎕json⎕OPT''Compact''0) ⎕dmx'
@@ -104,7 +107,7 @@
          ⎕SE._cita.Error s
      }
      :If DEBUG ⋄ ⎕←'Deleting log-files...' ⋄ :EndIf
-     1 ⎕SE._cita.qNDELETE ⎕←(∊2↑⎕SE._cita.qNPARTS CITA_Log),'.*'
+     1(⎕NDELETE ⎕OPT'Wildcard' 1)⎕←(∊2↑⎕NPARTS CITA_Log),'.*'
 
 
 
@@ -115,10 +118,10 @@
 ⍝ run the code
      :If 0<⎕SE._cita.tally subj←Env'CITATest'   ⍝ get test subject
          1 ⎕SE._cita.RecordMemStats'Start of CITATest'
-         ext←3⊃⎕SE._cita.qNPARTS subj
+         ext←3⊃⎕NPARTS subj
          :If CITA_Log≡'.log'
-             :If ~0∊⍴t←Env'testlog' ⋄ CITA_Log←t
-             :Else ⋄ CITA_Log←∊2↑⎕SE._cita.qNPARTS subj
+             :If ~0∊⍴t←Env'RunCITAlog' ⋄ CITA_Log←t
+             :Else ⋄ CITA_Log←∊2↑⎕NPARTS subj
              :EndIf
          :EndIf
          :If DEBUG ⋄ ⎕←'ext=',ext ⋄ :EndIf
@@ -132,8 +135,8 @@
                  ⎕←2 ⎕SE._cita.RecordMemStats'End of CITATest'
 
                  :If DEBUG ⋄ ⎕←'subj=',subj ⋄ :EndIf
-                 :If ⎕SE._cita.qNEXISTS s←(∊2↑⎕SE._cita.qNPARTS subj),'.log'
-                     ⎕SE._cita.Failure 1⊃⎕SE._cita.qNGET s
+                 :If ⎕NEXISTS s←(∊2↑⎕NPARTS subj),'.log'
+                     ⎕SE._cita.Failure 1⊃⎕NGET s
                  :EndIf
                  ⎕SE._cita.Success''
              :Else
@@ -209,17 +212,18 @@ runFn:
 End:
          :If DEBUG ⋄ ⎕←'No problems running user code' ⋄ :EndIf
          ⎕SE._cita.Success''
-     :ElseIf 0<⎕SE._cita.tally subj←Env'RunUCMD'
-     :if DEBUG
-         ⎕←'Executing UCMD ',subj
-         ⎕←'CommandLineArgs:'
-         ⎕←2 ⎕NQ'.' 'GetCommandLineArgs'
-     :endif
-         :Trap  DEBUG↓0
-         :if DEBUG
-	     ⎕←']',subj
-          :endif
-	     res←⎕SE.UCMD subj
+     :ElseIf 0<⎕SE._cita.tally subj←Env'RunUCMD'  ⍝──────────────────────────────────── RunUCMD
+         :If DEBUG
+             ⎕←'Executing UCMD ',subj
+             ⎕←'CommandLineArgs:'
+             ⎕←2 ⎕NQ'.' 'GetCommandLineArgs'
+         :EndIf
+         TheUCMDres←''
+         :Trap DEBUG↓0
+             :If DEBUG
+                 ⎕←']TheUCMDres←',subj
+             :EndIf
+             TheUCMDres←⎕SE.UCMD subj
              :If DEBUG ⋄ ⎕←'Log=',res ⋄ :EndIf
          :Else
              subj HandleError ⎕←'Error executing UCMD',NL,∊⎕DM,¨⊂NL
@@ -227,11 +231,11 @@ End:
          ⎕←∊(2 ⎕SE._cita.RecordMemStats'End'),¨⊂NL
          :If DEBUG ⋄ ⎕←'The last commands...' ⋄ :EndIf
          :Trap DEBUG↓0
-             ⎕←'res=',,res
-             :if (,'1')≡Env'CITAnqOFF'
-             ⎕se._cita._LogStatus'UCMD' ¯42
-                               {sink←2 ⎕NQ ⎕SE'keypress'⍵}¨'  )OFF ',⊂'ER'  ⍝ as long as 18008 isn't fixed (and for all older versions) we can't use ⎕OFF but have to ⎕NQ'KeyPress'
-             :endif
+                 ({1=≡⍵:⍵ ⋄ ∊(⍕⍵),⊂NL}TheUCMDres)⎕SE._cita._LogStatus'RunUCMD.log' ¯42   ⍝ leave behind a .UCMD file to indicate it was executed (and to show the result it returned)
+             :If (,'1')≡,Env'CITAnqOFF'
+                 {sink←2 ⎕NQ ⎕SE'keypress'⍵}¨'  )OFF ',⊂'ER'  ⍝ as long as 18008 isn't fixed (and for all older versions) we can't use ⎕OFF but have to ⎕NQ'KeyPress'
+                 →0
+             :EndIf
              :If '─'≡⊃1↑∊res   ⍝ success indicator:⋄:endif
                  :If DEBUG ⋄ ⎕←'Calling cita.Success' ⋄ :EndIf
                  ⎕SE._cita.Success''
@@ -242,6 +246,9 @@ End:
          :Else
              ⎕←⍎'(⎕json',(⍎(1+82=⎕DR' ')⊃'⎕ucs 9056' '''⎕OPT'''),'''Compact''0)⎕dmx'
          :EndTrap
+     :ElseIf 0<⎕SE._cita.tally subj←Env'ExecCommand'
+         {sink←2 ⎕NQ ⎕SE'KeyPress'⍵}¨subj,⊂'ER'
+         →0
      :Else
          ⎕←'No idea why you called me...!'
          ⎕←'Hint: could not find "CITAtest" in environment...'

@@ -18,21 +18,30 @@ stage ("mac_%CITA_VERSION%_%VERSION%") {
           error "PLATFORM=mac, exePath=${exePath}: File does not exist, giving it up!"
         }
       }
-      testPath="%xinD%mac_%VERSION%_u64/"
-      echo "testPath=$testPath"
 
       if ("${env.NODE_NAME}"=="mac3") {
         echo "replacing for mac3"
-        testPath = testPath.replaceAll("(^|=)/devt/","\$1/Volumes/devt/")
         citaDEVT="/Volumes/devt/"
-        echo "citaDEVT=$citaDEVT"
       } else {
         citaDEVT="/devt/"
       }
 
+      testPath="%xinD%mac_%VERSION%_u64/"
+      echo "testPath=$testPath"
+      echo "citaDEVT=$citaDEVT"
       cmdline = "%CMDLINE% CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log LOG_FILE=${testPath}CITA_Session.dlf citaDEVT=${citaDEVT}"
       cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
-      CITAlog="${testPath}CITA.log"
+      CITAlog="${testPath}CITA.log.json"
+      exists = fileExists (CITAlog)
+      echo "CITAlog=$CITAlog, exists=$exists"
+      if (exists)
+      {
+      def props = readJSON file: "${testPath/CITA.log.json"
+      echo "R="
+      echo props['R']
+      } else {
+
+      }
       echo "cmdline=$cmdline"
       echo "CITAlog=$CITAlog"
       echo "Launching $exePath $cmdline"

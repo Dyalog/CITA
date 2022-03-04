@@ -1,0 +1,9 @@
+﻿ {R}←FailOn18Only sink;v
+ ⍝ This is a standalone test that uses the CITA-Fns for testing (made available through ]DBuild.GitTools4CITA which is called internally before loading/launching this function.)
+ ⍝ Basically, it performs a test and then call ⎕SE._cita.LogStatus to record the status of that test.
+ R←⍬
+ :If '18.0'≡4↑v←2⊃'.'⎕WG'APLVersion'
+     (⎕←'This test fails intentionally on v18.0 - and was executed against Version',v)⎕SE._cita._LogStatus'fail'
+ :Else
+     (⎕←'No problem with version ',v)⎕SE._cita._LogStatus'ok'
+ :EndIf
