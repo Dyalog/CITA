@@ -116,6 +116,10 @@
      
       :If IsWin∧~IsSsh←326=⎕DR Exe
           ⎕USING←UsingSystemDiagnostics
+          :if 0<≢OutFile
+          args,←'>',OutFile
+          :endif
+          ⎕←'Launching APLProcess on Windows: ',Exe(ws,' ',args)
           psi←⎕NEW Diagnostics.ProcessStartInfo,⊂Exe(ws,' ',args)
           psi.WindowStyle←Diagnostics.ProcessWindowStyle.Minimized
           psi.WorkingDirectory←WorkingDir

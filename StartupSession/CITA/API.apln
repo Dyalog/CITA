@@ -636,7 +636,7 @@
       {}⎕SE.UCMD'output.find ',4↓x
     ∇
 
-    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD
+    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt
 ⍝:: Test a remote GitHub-repository
 ⍝?: Test a remote GitHub-repository
 ⍝?:
@@ -806,7 +806,7 @@
               →Exit
           :EndIf
 ⍝          rd←1⊃1(⎕NINFO⎕opt'Wildcard' 1)xinO,'*.*'
-          (rc1 cfg log1)←_GetTestSpecs cita_file←∊(⊂xinO,repo,'/'){⎕NEXISTS r←⍺,⍵:r ⋄ ⍬}¨'CITA.json' 'CITA.json5'
+          (rc1 cfgt log1)←_GetTestSpecs cita_file←∊(⊂xinO,repo,'/'){⎕NEXISTS r←⍺,⍵:r ⋄ ⍬}¨'CITA.json' 'CITA.json5'
           :If rc1≠0
               ns.Log←⊂'Error retrieving test specs: ',log1
               ns.rc←4711   ⍝ TODO: assign proper error no and document it
@@ -814,7 +814,7 @@
           :EndIf
           dyalogversions←(⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET home,'dyalogversions.json5'
           aplv←dyalogversions.versions
-          fapl←⊃∪/FilterAPLVersions¨(cfg{0=⍺.⎕NC ⍵:'' ⋄ ⍺⍎⍵}¨⊂'dyalogversions'),¨⊂' -list=',¯1↓∊aplv,¨','   ⍝ all versions we need to run on
+          fapl←⊃∪/FilterAPLVersions¨(cfgt{0=⍺.⎕NC ⍵:'' ⋄ ⍺⍎⍵}¨⊂'dyalogversions'),¨⊂' -list=',¯1↓∊aplv,¨','   ⍝ all versions we need to run on
           :If 0=≢fapl
               ns.Log←'No APLVersion found to test this repository against!'
               ns.rc←4711
@@ -831,9 +831,7 @@
           (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/RunCITA.dws')
           cmdlinePre←''
           cmdline←2 FixPath xinD,'CITA/client/RunCITA'    ⍝ .dws' don't specify extension to avoid failure if DWS
-          600⌶1
-          ∘∘∘
-          600⌶0
+
           :If EnableRIDE
               cfg.Settings.RIDE_INIT←'HTTP:*:4505'
               cmdlinePre←'export TERM=dumb;'
@@ -856,10 +854,11 @@
               job←('%xinD%'⎕R(2 FixPath xinD)⎕OPT'Regex' 0)job
               STAGES←''
               LOGFILES←⍬
-              :For platform :In dyalogversions.platforms  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
+              :For platform :In dyalogversions.platforms{6::⍺⋄⍺∩⍥⎕c(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    script{'
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {' '      script{'
-                  intro←('stage("',platform,'") {')'  steps{' '    script {'
+⍝ Platform win has label"Windows" with Jenkins
+                  intro←('stage("',{'win'≡⎕c⍵: 'Windows'⋄⍵ }platform,'") {')'  steps{' '    script {'
                   intro,←(⊂'      '),¨1⊃⎕NGET((1⊃⎕NPARTS file),'/stageintro.groovy')1
                   stage←''
      

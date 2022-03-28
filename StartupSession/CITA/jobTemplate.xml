@@ -29,7 +29,7 @@
             catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
               script {
                 def citaDEVT = "/devt/"
-                sh "/opt/mdyalog/18.2/64/unicode/p8/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%"              
+                sh "/opt/mdyalog/18.2/64/unicode/p9/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%.."                             
                 sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
               }
             }
@@ -49,7 +49,9 @@
               catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
                 def citaDEVT = "/devt/"
                 // permissions for everything in the test's folder
-                sh "chmod -R 755 %xinD%"
+                // no longer needed...
+                // sh "find %xinD% -user $USER -exec chmod -R 755 {} +"
+                
                 // and now delete the lockfile
                 def LOCKFILE="%LOCKFILE%"
                 if (LOCKFILE != "") {
