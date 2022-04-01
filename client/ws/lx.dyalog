@@ -224,7 +224,7 @@ End:
                  ⎕←']TheUCMDres←',subj
              :EndIf
              TheUCMDres←⎕SE.UCMD subj
-             :If DEBUG ⋄ ⎕←'Log=',res ⋄ :EndIf
+             :If DEBUG ⋄ ⎕←'TheUCMDres=',rheUCMDres ⋄ :EndIf
          :Else
              subj HandleError ⎕←'Error executing UCMD',NL,∊⎕DM,¨⊂NL
          :EndTrap
@@ -236,7 +236,7 @@ End:
                  {sink←2 ⎕NQ ⎕SE'keypress'⍵}¨'  )OFF ',⊂'ER'  ⍝ as long as 18008 isn't fixed (and for all older versions) we can't use ⎕OFF but have to ⎕NQ'KeyPress'
                  →0
              :EndIf
-             :If '─'≡⊃1↑∊res   ⍝ success indicator:⋄:endif
+             :If '─'≡⊃1↑∊TheUCMDres   ⍝ success indicator:⋄:endif
                  :If DEBUG ⋄ ⎕←'Calling cita.Success' ⋄ :EndIf
                  ⎕SE._cita.Success''
              :Else

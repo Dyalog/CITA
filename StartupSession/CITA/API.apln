@@ -1,4 +1,5 @@
 :namespace API
+    _Version←'0.9.1' '2022-04-01'
     NL←⎕UCS 10
     ⎕ml←1
     ⎕io←1
@@ -8,7 +9,7 @@
     ⍝ResultSymbols←↑((⎕ucs(1+⎕se.SALTUtils.CLASSIC)⊃10004 183)'success')('-' 'failure')('t' 'timeout')('n' 'no status file found')('i' 'invalid file')('e' 'error')('c' 'APLCORE while running test')('w' 'WS FULL executing test')('¢' 'classic vs. unicode')('~' 'disabled')
     ResultSymbols←↑((⎕ucs 183)'success')('-' 'failure')('t' 'timeout')('n' 'no status file found')('i' 'invalid file')('e' 'error')('c' 'APLCORE while running test')('w' 'WS FULL executing test')('¢' 'classic vs. unicode')('~' 'disabled')
     If←/⍨   ⍝  AB's father
-    cJSON←⎕JSON ⎕OPT'Compact' 0
+    cJSON←{1 ⎕JSON ⎕OPT'Compact' 0⊣⍵}
 
     ∇ (R log)←APLVersions arg;k;i;keys;int;exe;bak;cnt;file;json;old;doc;platform;fld;cJSON;z1;z2;t;old∆;k2;lglv;hlp;args;res;updated
 ⍝:: Reports the current list of local interpreters (or updates it with the right modifieres set)
@@ -44,7 +45,7 @@
      
 ⍝ the "standard"-header for the API-Functions takes care of providing help when the fn is called directly
      
-      _InitUCMDs  ⍝ yeah, this is ambigous - but the API-fns also rely on ##.Home being set up. May find a better way to name or address this...
+      _InitUCMDs
       :If ''=⍥⎕DR arg                              ⍝ if arg is char,
           arg←arg{~∨/⍵⍷⎕C ⍺:⍺,' ',⍵ ⋄ ⍺}'-ucmd=0'  ⍝ this is an API-Call - so be sure to add the -ucmd=0-modifier if we don't see it
           hlp←∨/('-?'⍷⍕arg)                        ⍝ remember if user asked for help
@@ -281,7 +282,7 @@
 ⍝A?: Log
 ⍝A?: testMat:  Matrix - Tests x Interpreters with single-letter result of corresponding test.
 ⍝A?:           First row/col has titles of tests and interpreters
-      _InitUCMDs  ⍝ yeah, this is ambigous - but the API-fns rely on ##.Home being set up. May find a better way to name or address this...
+      _InitUCMDs
       ns←⎕NS''
       res←¯1  ⍝ res=¯1 indicates no test were run!
       Log←''
@@ -589,23 +590,18 @@
                   →EndForSpec
               :EndTrap
      EndForSpec:
-              :If 0<≢Results.⎕NL ¯2   ⍝ if anything was tested...
+              :If 0<≢nsJob.⎕NL ¯2   ⍝ if anything was tested...
                   (resNS←'t_',(2⊃⎕NPARTS ¯1↓xinO))Results.⎕NS''
                   resNS←Results⍎resNS
                   resNS.Log←2⊃jobR
                   resNS.rc←rcTest
-              ⍝resNS⎕ns'nsTest'
-                  ⎕←'resNS vor merge:'
-                  ⎕←cJSON resNS
                   resNS{(⊂⍺ ⍵){⍎'(1⊃⍺).',⍵,'←(2⊃⍺)⍎⍵'}¨⍵.⎕NL ¯2}nsTest
-                  ⎕←'resNS nach merge:'
-                  ⎕←cJSON resNS
-                  :If 'test'≡step
-                  :AndIf 9=⎕NC'nsTest'
-                      ⎕←⎕JSON nsTest
-                  :AndIf 2=nsTest.⎕NC'outfile'
+            ⍝      :If 'test'≡step
+            ⍝      :AndIf 9=⎕NC'nsTest'
+                  ⎕←⎕JSON nsTest
+                  :If 2=nsTest.⎕NC'outfile'
                       ⎕←(≢xinO)↓nsTest.outfile
-                      resNS.outfile←(≢xinO)↓nsJob.outfile
+                      resNS.outfile←(≢xinO)↓nsTest.outfile
                   :EndIf
               :EndIf
           :EndFor
@@ -616,14 +612,15 @@
           Log,←↓⍕resTab
           Log,←_AddLegend resTab
       :EndIf
-      :if 2=⎕nc'keep'
-      :andIf ∨/'r'∊keep
+      :If 2=⎕NC'keep'
+      :AndIf ∨/'r'∊keep
           Log,←⊂'Logs (including this log) can be found in ',xin∆,' and subfolders'
           (⊂Log)⎕NPUT xin∆,'CITA.log'
       :EndIf
       ns.Log←Log
       ns.rc←res
       ns.testMat←resTab
+      ⎕←'Results=',cJSON Results
       cmnt←NL,' /***************** Results *******************',NL,(,(⍕resTab),⊂NL),' ****************************/',NL
       (⊂cmnt{⍵[1],⍺,1↓⍵}∊(cJSON Results))⎕NPUT xinO,'CITA.log.json'
     ∇
@@ -642,9 +639,9 @@
 ⍝?:
 ⍝?: ]TestRepo [URL]|[org repo]    -branch=<id>  -tag=<id>   -commit=<sha> -pull∊0123456789 [-keep[∊RCcr]] -keeponfailure[∊RCcr] [-int[=180U64...] -jenkins -off -nomail
 ⍝Parse:        1-2L               -branch=      -tag=       -commit=      -pull∊0123456789  -keep[∊]RCcr  -keeponfailure[∊]RCcr  -int[∊]"0123456789UCuc_/,.~-all"   -jenkins -off -nomail
-⍝??: Test a remote repository
+⍝??: Test a remote GitHub-repository
 ⍝??:
-⍝?: ]TestRepo [URL]|[[org] repo]    -branch=<id> | -tag=<id> | -commit=<id> | -pull=<no of PR>
+⍝??: ]TestRepo [URL]|[org repo]    -branch=<id>  -tag=<id>   -commit=<sha> -pull∊0123456789 [-keep[∊RCcr]] -keeponfailure[∊RCcr] [-int[=180U64...] -jenkins -off -nomail
 ⍝??: <URL>                URL of a repo (can also be a URL of a commit or tag or branch or PR as taken from your browser)
 ⍝??: <org>                name of an organization (i.e. "dyalog" - which is also the default)
 ⍝??: <repo>               name of a repo (i.e. "CITA")
@@ -653,7 +650,7 @@
 ⍝??; -nomail  do not send status mail (as configured in CITA.json)
 ⍝??: as configured in CITA.json[5] in the repository.
      
-      _InitUCMDs  ⍝ yeah, this is ambigous - but the API-fns rely on ##.Home being set up. May find a better way to name or address this...
+      _InitUCMDs
       _ai3←⎕AI[3]
       ns←⎕NS''
       ns.Log←⍬
@@ -775,7 +772,7 @@
           ⎕←'xinD=',xinD
           3 ⎕MKDIR xinO,'CITA'
 ⍝ 675 and below
-          :If 0=≢res←2 ⎕NQ'.' 'GetEnvironment' 'CITAGetReposFrom'   ⍝ optional, mey define local path to a git (which has subfolders for CITA and DBuildTest)
+          :If 0=≢res←2 ⎕NQ'.' 'GetEnvironment' 'CITAGetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
           :OrIf 'git'≡⎕C res
           :OrIf ~⎕NEXISTS res
               :If 0≠⊃res←(xinO,'CITA/')##.GitHub.GetFilesFromSHA'Dyalog' 'CITA'
@@ -831,7 +828,7 @@
           (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/RunCITA.dws')
           cmdlinePre←''
           cmdline←2 FixPath xinD,'CITA/client/RunCITA'    ⍝ .dws' don't specify extension to avoid failure if DWS
-
+     
           :If EnableRIDE
               cfg.Settings.RIDE_INIT←'HTTP:*:4505'
               cmdlinePre←'export TERM=dumb;'
@@ -854,11 +851,11 @@
               job←('%xinD%'⎕R(2 FixPath xinD)⎕OPT'Regex' 0)job
               STAGES←''
               LOGFILES←⍬
-              :For platform :In dyalogversions.platforms{6::⍺⋄⍺∩⍥⎕c(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
+              :For platform :In dyalogversions.platforms{6::⍺ ⋄ ⍺∩⍥⎕C(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    script{'
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {' '      script{'
 ⍝ Platform win has label"Windows" with Jenkins
-                  intro←('stage("',{'win'≡⎕c⍵: 'Windows'⋄⍵ }platform,'") {')'  steps{' '    script {'
+                  intro←('stage("',{'win'≡⎕C ⍵:'Windows' ⋄ ⍵}platform,'") {')'  steps{' '    script {'
                   intro,←(⊂'      '),¨1⊃⎕NGET((1⊃⎕NPARTS file),'/stageintro.groovy')1
                   stage←''
      
@@ -945,6 +942,11 @@
                   0::' '
                   ((⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET ⍵,'.json').⎕NL ¯9
               }¨LOGFILES
+              ⎕←'LOGFILES'
+              ⎕←LOGFILES
+              ⎕←'tests'
+              ⎕SE.Dyalog.Utils.display tests
+     
               tests←2↓¨∪⊃¨tests~⊂' '
               vt←((≢tests)/∪versions),[0.5](×/≢¨tests(∪versions))⍴tests
               resTab←((⊂''),(⊂''),∪platforms),vt⍪((≢∪platforms),¯1↑⍴vt)⍴' '
@@ -1003,6 +1005,7 @@
                       resTab[2+r;1+c]←⊂'n'
                       ht[2+r;1+c]←LOGFILES[i]
                   :EndTrap
+                  ⎕←LOGFILES[i],'→ r=',r,', c=',c,', resTab=',resTab[2+2;1+c]
               :EndFor
               :If DEBUG ⋄ ⎕←'ht:' ⋄ ⎕←ht ⋄ :EndIf
               ns.resTab←resTab
@@ -1131,9 +1134,9 @@
           (⊂r)⎕NPUT(xinO,'CITA.log.html')1
       :EndIf
       (⊂(⎕JSON ⎕OPT('Compact' 0)('HighRank' 'Split'))ns)⎕NPUT xinO,'CITA.log.json'
-      :If arg.off
-          ⎕OFF 42   ⍝ 42 indicates "regular exit"
-      :EndIf
+    ⍝   :If arg.off
+    ⍝       ⎕OFF 42   ⍝ 42 indicates "regular exit"
+    ⍝   :EndIf
     ∇
 
     :section tools
@@ -1174,7 +1177,7 @@
       1 ⎕NDELETE¨StatusFiles  ⍝ make sure there are no old statusfiles around...
      
       cfg,←' CITA_Log="',(∊2↑⎕NPARTS 1⊃StatusFiles),'"'
-      cfg,←' APLCORENAME="',(aplcore←xin,'APLCORE_',step,'.'),'"'
+      cfg,←' APLCORENAME="',(aplcore←xin,({¯1↓(1=⌽+\⌽⍵='/')/⍵}xin),'_CORE_',step,'.'),'"'
       :If 0<≢t←2 ⎕NQ'.' 'GetEnvironment' 'COMMANDFOLDER'
           ⍝ if CMDFOLDER was set when we were called...
           cfg,←' COMMANDFOLDER="',t,'"'   ⍝ let the process use it, too
@@ -1634,7 +1637,8 @@
           nr←##.API.⎕NR fn
           j←'{'
           j,←'"Name":',_quote fn
-          j,←',"Desc":',_quote desc←∊nr _findLine':'
+        ⍝   j,←',"Desc":',_quote desc←∊nr _findLine':'
+          j,←',"Desc":',(_quote desc←∊(nr _findLine':'),' | Version: ',1⊃_Version)
              ⍝ Parse: we also support parseU/parseA to allow for different syntax when API-Fn is used via UCMD or API-Calls.
           :If 0=≢parse←∊nr _findLine'Parse'
               parse←∊nr _findLine'UParse'
@@ -1651,7 +1655,7 @@
               patt,←'(\?+):'
               maxH←⌈/0,∊(patt ⎕S{¯1↑⍵.Lengths})nr
               :For h :In ⍳maxH
-                  ##.UCMD._Help⍪←(⊂fn),((h-1)+0.1×mode='A'),(mode≠'A')⌽(⊂''),[1.5]nr _findLine((mode='A')/'A'),h⍴'?'    ⍝ Help for APIs has level +.1! ;)
+                  ##.UCMD._Help⍪←(⊂fn),((h-1)+0.1×mode='A'),(mode≠'A')⌽(⊂''),[1.5]{i←⍸']'=⊃¨⍵ ⋄ 1>≢i:⍵ ⋄ w←⍵ ⋄ w[i[1]]←⊂(i[1]⊃w),' | Version: ',1⊃_Version ⋄ w}nr _findLine((mode='A')/'A'),h⍴'?'    ⍝ Help for APIs has level +.1! ;)
               :EndFor
           :EndFor
           :If 0∊(≢parse),≢desc  ⍝ if either description or parsing rules are undefined, ignore this fn!
@@ -1662,8 +1666,6 @@
           j,←',"Group":"CITA"'
           j,←'}'
           ##.UCMD._List,←j,','
-     
-     
      
           :Select 1 2⊃AT←##.API.⎕AT fn
           :Case 0 ⍝ niladic or not a fn
@@ -1727,7 +1729,7 @@
 ⍝A??: Switch "-list" can be used to provide a list of version numbers that will be filtered - no consideration of
 ⍝A??: bits or editions. (Primarily used for internal purposes)
      
-      _InitUCMDs  ⍝ yeah, this is ambigous - but the API-fns als rely on ##.Home being set up. May find a better way to name or address this...
+      _InitUCMDs
       :If ''=⍥⎕DR arg       ⍝ if arg is char,
           arg←arg{~∨/⍵⍷⎕C ⍺:⍺,' ',⍵ ⋄ ⍺}'-ucmd=0'  ⍝ this is an API-Call - so be sure to add the -ucmd=0-modifier if we don't see it
           hlp←∨/'-?'⍷⍕arg   ⍝ remember if user asked for help
