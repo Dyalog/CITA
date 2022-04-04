@@ -8,9 +8,9 @@
     bits: [32,64],
     platforms: [
         "aix",
-        //"mac",
-        //"pi",
-        //"win",
+        "mac",
+        "pi",
+        // "win",
         //"linux",
         
     ],
@@ -25,7 +25,7 @@
     },
     platforms_extras: {
         aix: [
-           // "p8",
+           "p8",
             "p9",
           //  "p10"
             ]

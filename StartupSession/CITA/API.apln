@@ -649,6 +649,14 @@
 ⍝??: -off     exit APL after running test
 ⍝??; -nomail  do not send status mail (as configured in CITA.json)
 ⍝??: as configured in CITA.json[5] in the repository.
+⍝A?: Error codes (ns.rc):
+⍝A?: 0 - ok (tests succeeded)
+⍝A?: 1 - tests were excuted and we had saw at least one test not succeeding
+⍝A?: 101 - Problem "getting" repository (Details in ns.Log)
+⍝A?: 101 - Problem "getting" repository (Details in ns.Log)
+⍝A?: 102 - Problem "getting" test-specs (Details in ns.Log)
+⍝A?: 103 - No APL found to test against (Details in ns.Log)
+⍝A?: 104 - Internal problem
      
       _InitUCMDs
       _ai3←⎕AI[3]
@@ -669,13 +677,13 @@
      
       :If 'http'≡⎕C 4↑fl  ⍝ if a URL is given
           :If ~##.GitHub.HasCITA fl
-              ns.rc←2
+              ns.rc←102
               ns.Log←⊂'Repository ',fl,' does not contain CITA.json[5]'
               →Exit
           :EndIf
           fl←'/'(≠⊆⊢)(7+'s'=5⊃fl)↓fl   ⍝ elements of the URL
           :If 'github.com'≢⎕C 1⊃fl
-              ns.rc←1
+              ns.rc←101
               ns.Log←⊂'Domain ("',arg._1,'") of URL did not match "github.com"'
               →Exit
           :EndIf
@@ -694,7 +702,7 @@
                       R←'head.sha'##.GitHub.GetPagedResults url
                       sha←2⊃,R
                   :Else
-                      ns.rc←1
+                      ns.rc←101
                       ns.Log←⊂'Could not identify PR'
                       →Exit
                   :EndIf
@@ -707,7 +715,7 @@
           :If 'cita.json'≢⎕C 9↑3⊃⎕NPARTS fl  ⍝ does it point to a CITA.json directly?
               fl←fl,(~'\/'∊⍨⊢/fl)/'/'   ⍝ try to interpret it as proper folder
           :AndIf (~⎕NEXISTS fl,'CITA.json')∧~⎕NEXISTS fl,'CITA.json5'  ⍝ or to a folder that contains such a file?
-              ns.rc←2
+              ns.rc←102
               ns.Log←⊂'Folder ',fl,' does not contain CITA.json[5]'
               →Exit
           :EndIf
@@ -723,7 +731,7 @@
           :EndIf
           :If ~hasCITA
           :AndIf ~##.GitHub.HasCITA arg.(_1 _2)
-              ns.rc←2
+              ns.rc←102
               ns.Log←⊂'Repository ',(∊arg.(_1'/',_2)),' does not contain CITA.json[5]'
               →Exit
           :EndIf
@@ -764,7 +772,7 @@
           :OrIf '/Volumes/devt/'≡(d←14)↑xinO
               xinD←'u:/',d↓1⊃⎕NPARTS xinO
           :Else
-              ns.rc←4713 ⍝ TODO: return code!
+              ns.rc←104 ⍝ TODO: return code!
               ns.Log←⊂'xinO on unexpected location!'
               →Exit
           :EndIf
@@ -776,7 +784,7 @@
           :OrIf 'git'≡⎕C res
           :OrIf ~⎕NEXISTS res
               :If 0≠⊃res←(xinO,'CITA/')##.GitHub.GetFilesFromSHA'Dyalog' 'CITA'
-                  ns.rc←4712 ⍝ TODO: proper error etc.
+                  ns.rc←101
                   ns.Log←⊂'Download of CITA repo failed with',2⊃res
                   →Exit
               :EndIf
@@ -784,7 +792,7 @@
 ⍝ get the last version of DyalogBuild.dyalog to ensure that we interpreters will use the latest version of ]DTest
               info'Retrieving DyalogBuild.dyalog from GitHub'
               :If 0≠⊃res←(xinO,'CITA/SALT/spice/DyalogBuild.dyalog')##.GitHub.RetrieveFile'https://raw.githubusercontent.com/Dyalog/DBuildTest/master/DyalogBuild.dyalog'
-                  ns.rc←4712 ⍝ TODO: proper error etc.
+                  ns.rc←101 
                   ns.Log←⊂'Download of DBuildTest repo failed with',2⊃res
                   →Exit
               :EndIf
@@ -798,7 +806,7 @@
           :EndIf
      
           :If 0≠1⊃rc1
-              ns.rc←4711  ⍝ TODO: better error
+              ns.rc←101 
               ns.Log←⊂'Error retrieving repo: ',∊1↓rc1
               →Exit
           :EndIf
@@ -806,7 +814,7 @@
           (rc1 cfgt log1)←_GetTestSpecs cita_file←∊(⊂xinO,repo,'/'){⎕NEXISTS r←⍺,⍵:r ⋄ ⍬}¨'CITA.json' 'CITA.json5'
           :If rc1≠0
               ns.Log←⊂'Error retrieving test specs: ',log1
-              ns.rc←4711   ⍝ TODO: assign proper error no and document it
+              ns.rc←102
               →Exit
           :EndIf
           dyalogversions←(⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET home,'dyalogversions.json5'
@@ -814,7 +822,7 @@
           fapl←⊃∪/FilterAPLVersions¨(cfgt{0=⍺.⎕NC ⍵:'' ⋄ ⍺⍎⍵}¨⊂'dyalogversions'),¨⊂' -list=',¯1↓∊aplv,¨','   ⍝ all versions we need to run on
           :If 0=≢fapl
               ns.Log←'No APLVersion found to test this repository against!'
-              ns.rc←4711
+              ns.rc←103
               →Exit
           :EndIf
           info'fapl=',fapl
@@ -837,10 +845,6 @@
           cmdline,←' ENABLE_CEF=0'
           cmdline,←' DYALOGSTARTUPSE=',2 FixPath xinD,'CITA/StartupSession/'
           cmdline,←' COMMANDFOLDER=',2 FixPath xinD,'CITA/SALT/spice/'
-          ⍝cmdline,← FixPath xinO,'CITA/StartupSession/'
-          ⍝cmdline,←' "',(∊1 ⎕NPARTS ##.Home),'/client/RunCITA" '
-⍝ run Jenkins job that execute commandline systems using given labels.  TODO: consider fapl here!
-              ⍝jenk.Labels←↓'F4.1,< >'⎕FMT fapl  ⍝ TODO: unsure if Labels is best for this - or explicit DYALOGVERSIONS....?
      
      
           info'Generating jobdef'
@@ -896,7 +900,7 @@
                                       cfg.Settings.RunUCMD←'ExecuteLocalTest ',(1 FixPath xinD,repo,'/',(∊1↓⎕NPARTS cita_file)),' -workdir=',(1 FixPath sdirD),({(⍵≢⍥,'*')/' -keep=',⍵}'*'arg.Switch'keep'),({(⍵≢⍥,'*')/' -keeponfailure=',⍵}'*'arg.Switch'keeponfailure')
      
                                       ⍝LOGFILES,←⊂sdir,repo,'/CITA.log'
-                                      LOGFILES,←⊂sdir,'/CITA.log'
+                                      LOGFILES,←⊂sdir,'CITA.log'
                                       :If 'win'≡⎕C platform  ⍝ tweaks for win, suggested by AS, 210819
                                           cfg.Settings.DYALOG_NOPOPUPS←1   ⍝
                                           cfg.Settings.PASSEXCEPTIONSTOOPSYS←0
@@ -1439,7 +1443,7 @@
       Log←''('Explanation of status indicator',((1<≢∪summary)/'s'),':')
       :For symb exp :In ↓ResultSymbols
           :If symb∊summary
-              legend,←symb,'= ',exp,', '
+              legend,←symb,' = ',exp,', '
           :EndIf
       :EndFor
       Log,←⊂¯2↓legend

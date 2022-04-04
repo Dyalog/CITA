@@ -51,7 +51,7 @@
                 // permissions for everything in the test's folder
                 // no longer needed...
                 // sh "find %xinD% -user $USER -exec chmod -R 755 {} +"
-                
+                sh "find %xinD% -user jenkins -exec chmod -R 755 {} \\;"
                 // and now delete the lockfile
                 def LOCKFILE="%LOCKFILE%"
                 if (LOCKFILE != "") {
