@@ -169,7 +169,7 @@
                   :EndIf
               :Else
 ⍝                  :If 3=≡x
-                      data←↑x
+                  data←↑x
 ⍝                  :Else
 ⍝                      data←,[1.5]x
 ⍝                  :EndIf
@@ -352,10 +352,16 @@
           ⎕←'Could not find envvar "GitHub_API_Token" - please make sure it is set (in env or .dcfg) before using this function!'
           ⎕SIGNAL 11
       :EndIf
-      :If 0<≢t←5179⌶1⊃⎕SI
+      :If 0<≢t←50 ⎕ATX 1⊃⎕SI
           HomeDir←1⊃⎕NPARTS 4⊃t
       :EndIf
-      ⎕SE.SALT.Load HomeDir,'HttpCommand.dyalog'
+      :Trap 0
+          ⎕SE.SALT.Load HomeDir,'HttpCommand.dyalog'
+      :Else
+          ⎕←'⎕en=',⎕EN
+          ⎕←⎕DM.¨⎕UCS 13
+          ⎕SE.SALT.Load'HttpCommand'
+      :EndTrap
     ∇
 
     split←(≠⊆⊢)
