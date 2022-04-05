@@ -11,7 +11,7 @@
     If←/⍨   ⍝  AB's father
     cJSON←{1 ⎕JSON ⎕OPT'Compact' 0⊣⍵}
 
-    ∇ (R log)←APLVersions arg;k;i;keys;int;exe;bak;cnt;file;json;old;doc;platform;fld;cJSON;z1;z2;t;old∆;k2;lglv;hlp;args;res;updated
+    ∇ (R log)←APLVersions arg;k;i;keys;int;exe;bak;cnt;file;json;old;doc;platform;fld;z1;z2;t;old∆;k2;lglv;hlp;args;res;updated
 ⍝:: Reports the current list of local interpreters (or updates it with the right modifieres set)
 ⍝?:
 ⍝?: ]APLVersions
