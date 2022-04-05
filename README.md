@@ -5,14 +5,32 @@ pick up and use. Local testing (as opposed to "remote testing with Jenkins")
 is currently beta-tested internally, the remote functionality is still under
 discussion & development.
 
-Most documentation is on the developers harddrive atm ;)  Please feel free to
-ask for any details that are not obvious.
+Documentation is a work in progress and will eventually be hosted  in the [Wiki](https://github.com/Dyalog/CITA/wiki). Please feel free to ask for any details that are not obvious.
 
 ## Installation
-
-Requires v18. If you want to use ]DTest or the ]GetTools4CITA User commands,
-you need [DBuildTest](https://github.com/Dyalog/DBuildTest) v1.46 onwards!
-
+* Requires v18.0 or later
+* Clone the CITA repository (we'll assume it's in /git/CITA/)
+* Add the path `/git/CITA/SALT/spice` to the User Commands `cmddir` setting 
+* Rebuild your user command cache using `]UReset`
+* If you want to use ]DTest or the ]GetTools4CITA User commands,
+you need [DBuildTest](https://github.com/Dyalog/DBuildTest) v1.46 or later
+## Testing locally with `]DTest`
+* Identify the installed Dyalog versions using `]CITA.APLVersions -rebuild`.  This creates the file `interpreters.json5`.
+* For any versions for which you want to enable testing, in `interpreters.json5`, add an empty "disabled" element. (`"disabled" : ""`) 
+* In the repository you want to test, create a file named `CITA.json5` that looks something like:
+```
+/* MyRepository CITA */
+{
+    Tests: [{
+        "DyalogVersions": "17+",
+        "Test": "./tests/unit.dyalogtest",
+    }, ]
+}
+```
+* "Tests" is an array of 0 or more testing specifications where:
+  * "DyalogVersions" are the versions you want your repository tested with. Make sure to enable them as described above.
+  * "Test" is the name of the test file to execute.
+* Use `]CITA.ExecuteLocalTest` to execute the test(s).
 ## Interaction with Jenkins
 
 (Preliminary doc - pls. expect changes and be prepared to find bugs! If you have
