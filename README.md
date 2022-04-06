@@ -51,8 +51,3 @@ or by using a .dcfg file. We need the following:
 * `DYALOGCITAWORKDIR` - this is the folder in which CITA will run its tests. 
 Should point to `u:\apltools\CITA\CITA-Tests\` or `/devt/apltools/CITA/CITA-Tests/' under unix or macos<sup>1</sup>.
 
-
-## Footnotes
-
-1. mac3 addresses this path a `/Volumes/devt/apltools...` - but since we don't know if we will be running on mac3 or not,
-   the Jenkins-script will prefix `/Volumes` itself when needed (when node is recognized as "mac3"). Also, an environment variable `citaDEVT` is available which contains the correct way of addressing /devt/ on the current node.
