@@ -27,7 +27,8 @@
                   :AndIf ⎕NEXISTS ##.t,'.dyalog'   ⍝ lets see if we can work out where came from (this works during List...)
                       Home←((({1⊃⎕NPARTS ¯1↓⍵})⍣3)##.t),'StartupSession/CITA'
                   :Else
-                      Home←(1⊃⎕RSI).##.##.List{0::'' ⋄ 7⊃(⍺⍪⊂'')[⍺[;1]⍳⊂⍵;]}'cita'    ⍝ we're called during Run - get location from cached list 
+                      Home←(1⊃⎕RSI).##.##.List{0::'' ⋄ 7⊃(⍺⍪⊂'')[⍺[;1]⍳⊂⍵;]}'cita'    ⍝ we're called during Run - get location from cached list
+                      Home←∊1 ⎕NPARTS(1⊃⎕NPARTS Home),'../../StartupSession/CITA'
                   :EndIf
                   :If ⎕NEXISTS Home
                       'CITA'⎕SE.⎕NS''
