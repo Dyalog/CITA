@@ -994,9 +994,6 @@
                       :EndFor
                   :Else
                       ⎕←'Logfile not found: ',(i⊃LOGFILES),'.json'
-                      600⌶1
-                      ∘∘∘
-                      600⌶0
                       :If DEBUG
                           ⎕←':trapped something!'
                           ⎕←cJSON ⎕DMX

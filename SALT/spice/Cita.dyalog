@@ -20,36 +20,32 @@
     ∇
 
     ∇ Init;Home
-    :trap 0
-        :If 0=⎕NC'⎕SE.CITA.UCMD._List'
-          :If 0=⎕NC'⎕SE.CITA'
-            :if 2=##.⎕nc't' ⍝ lets see if we can work out where came from
-            :andif ⎕nexists ##.t,'.dyalog'   ⍝ lets see if we can work out where came from (this works during List...)
-              Home←((({1⊃⎕nparts ¯1↓⍵})⍣3)##.t),'StartupSession/CITA'
-              :if ⎕nexists Home 
-                'CITA'⎕SE.⎕ns''  
-                ⎕se.Link.Import  ⎕se.CITA Home
-                ⎕←'Link.imported ⎕SE.CITA from ',Home 
-                ⎕se.CITA.DYALOGCITASRCDIR←Home
-              :else 
-                ⎕←'Computed home-folder for CITA ("',Home,'" did not exist - please contact mbaas@dyalog.com!'
-                →0
-             :endif
-            :else
-              ⎕←'Could not find ⎕SE.CITA - please check your StartupSession-Folder!'
-              600⌶1
-              <j∘∘∘
-              600⌶0
-              →0
-            :EndIf
+      :Trap 0
+          :If 0=⎕NC'⎕SE.CITA.UCMD._List'
+              :If 0=⎕NC'⎕SE.CITA'
+                  :If 2=##.⎕NC't' ⍝ lets see if we can work out where came from
+                  :AndIf ⎕NEXISTS ##.t,'.dyalog'   ⍝ lets see if we can work out where came from (this works during List...)
+                      Home←((({1⊃⎕NPARTS ¯1↓⍵})⍣3)##.t),'StartupSession/CITA'
+                  :Else
+                      Home←(1⊃⎕RSI).##.##.List{0::'' ⋄ 7⊃(⍺⍪⊂'')[⍺[;1]⍳⊂⍵;]}'cita'    ⍝ we're called during Run - get location from cached list 
+                  :EndIf
+                  :If ⎕NEXISTS Home
+                      'CITA'⎕SE.⎕NS''
+                      {}⎕SE.Link.Import ⎕SE.CITA Home
+                    ⍝   ⎕←'Link.imported ⎕SE.CITA from ',Home
+                      ⎕SE.CITA.DYALOGCITASRCDIR←Home
+                  :Else
+                      ⎕←'Computed home-folder for CITA ("',Home,'" did not exist - please contact mbaas@dyalog.com!'
+                      →0
+                  :EndIf
+              :EndIf
+              ⎕SE.CITA.API._InitUCMDs
           :EndIf
-          ⎕SE.CITA.API._InitUCMDs
-        :endif
-      :else 
-⎕←'Error initialising CITA UCMD:'
-⎕←(⎕json⎕opt'Compact'0)⎕dmx
-→0 
-      :endtrap
+      :Else
+          ⎕←'Error initialising CITA UCMD:'
+          ⎕←(⎕JSON ⎕OPT'Compact' 0)⎕DMX
+          →0
+      :EndTrap
     ∇
 
 :endnamespace
