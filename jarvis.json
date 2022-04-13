@@ -2,7 +2,7 @@
     "CodeLocation": "/app/server/CITA_Server.apln",
     "Debug": 0,
     "Paradigm":"JSON",
-    "Port":80,
+    "Port":8080,
     "AppInitFn": "Run",
     "HTMLInterface":0
 }
