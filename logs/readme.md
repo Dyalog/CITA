@@ -1,0 +1,1 @@
+This directory contains logs of the CITA server (in folder ../server/)

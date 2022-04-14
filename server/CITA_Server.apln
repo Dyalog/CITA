@@ -2,6 +2,7 @@
     nl←⎕ucs 13
 
     ∇ r←Run
+    ⎕←'This is CITA/server/CITA_Server.Run!'
       :If 0=⎕SE.⎕NC'UCMD'
           ⎕←'Loading session'
           d←2 ⎕NQ'.' 'GetEnvironment' 'DYALOG'
@@ -10,6 +11,7 @@
           ⎕DL 1 ⍝ make sure we don't have a timing issue
           ⎕SE.Dyalog.Callbacks.WSLoaded 1
       :EndIf
+      ⎕←'Loading DCL/Crypt'
       ⎕SE.SALT.Load Home,'../DCL/Crypt.dyalog -target=#'
       #.Crypt.Init Home,'../DCL/'
       r←0
@@ -54,7 +56,7 @@
           :EndIf
       :EndIf
      
-      :If ⎕NEXISTS LOGDIR←Home,'logs/'  ⍝ only write a logfile if logdir exists
+      :If ⎕NEXISTS LOGDIR←Home,'../logs/'  ⍝ only write a logfile if logdir exists: folder logs in .. will map to /app/logs
           (⊂log)⎕NPUT ⎕←LOGDIR,,'<req>,ZI4,ZI2,ZI2,<_>,ZI2,ZI2,ZI3,<.log>'⎕FMT 1 6⍴⎕TS
       :EndIf
       res←'Processed your request'
