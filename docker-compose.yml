@@ -15,6 +15,6 @@ services:
     - RIDE_INIT=serve:*:4502
     working_dir: /app
     ports: 
-    - "8080"
-    - "4502"
+    - "8080:8080"
+    - "4502:4502"
 #    user: '6103' #for JR - set to your UID if needed
