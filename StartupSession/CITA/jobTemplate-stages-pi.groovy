@@ -13,12 +13,12 @@ stage ("pi_%CITA_VERSION%_%VERSION%") {
           } else {
             error "Found no interpreter for ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
           }
-          testPath="%xinD%pi_%VERSION%_${E}${BITS}/"
+          testPath="%xinD%pi_%VERSION%${E}${BITS}/"
           cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log LOG_FILE=${testPath}CITA_Session.dlf"
-            cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
+        //cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
           
           echo "Launching $exePath $cmdline "
-          rjc = sh(script: "$exePath $cmdline" , returnStatus: true)
+          rc = sh(script: "$exePath $cmdline" , returnStatus: true)
           exists = fileExists("${testPath}CITA.log.ok") 
           if (exists) {
             echo "Test succeeded"

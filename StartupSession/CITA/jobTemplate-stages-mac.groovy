@@ -1,4 +1,5 @@
-stage ("mac_%CITA_VERSION%_%VERSION%") {
+//stage ("mac_%CITA_VERSION%_%VERSION%") {
+stage ("run test") {
   node ("mac&&%CITA_VERSION%&&%VERSION%") {
     // no looping over bits/editions - mac is always unicode 64 
     // catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
@@ -26,31 +27,34 @@ stage ("mac_%CITA_VERSION%_%VERSION%") {
         citaDEVT="/devt/"
       }
 
-      testPath="%xinD%mac_%VERSION%_u64/"
+      testPath="%xinD%mac_%VERSION%u64/"
       echo "testPath=$testPath"
       echo "citaDEVT=$citaDEVT"
       cmdline = "%CMDLINE% CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log LOG_FILE=${testPath}CITA_Session.dlf citaDEVT=${citaDEVT}"
-      cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
+      //cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
       CITAlog="${testPath}CITA.log.json"
-      exists = fileExists (CITAlog)
-      echo "CITAlog=$CITAlog, exists=$exists"
-      if (exists)
-      {
-      def props = readJSON file: "${testPath/CITA.log.json"
-      echo "R="
-      echo props['R']
-      } else {
 
-      }
       echo "cmdline=$cmdline"
       echo "CITAlog=$CITAlog"
       echo "Launching $exePath $cmdline"
       //sh "$exePath $cmdline"
-      rcj = sh(script: "$exePath $cmdline" , returnStatus: true)
+      rc = sh(script: "$exePath $cmdline" , returnStatus: true)
       echo "CITAlog=$CITAlog|${CITAlog}"
-      echo "rcj=$rcj"
+      echo "rc=$rc"
       sh "ls ${testPath}"
       exists = fileExists("${CITAlog}.ok") 
+
+      exists = fileExists (CITAlog)
+      echo "CITAlog=$CITAlog, exists=$exists"
+      // if (exists)
+      // {
+      // def props = readJSON file: "${testPath}/CITA.log.json"
+      // echo "R="
+      // echo props['R']
+      // } else {
+
+      // }
+
       if (exists) {
         echo "Test succeeded"
         rc = 0

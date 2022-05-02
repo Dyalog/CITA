@@ -1,15 +1,28 @@
 :namespace API
-    _Version←'0.9.1' '2022-04-01'
-    NL←⎕UCS 10
+    _Version←'0.9.4' '2022-05-02'
+    NL←⎕UCS 13
     ⎕ml←1
     ⎕io←1
     Timeout←180 ⍝ seconds before we consider a job to have timedout
-    DEBUG←⎕se.SALTUtils.DEBUG×0   ⍝ only allow debugging if we're in UCMD-DEBUG mode
+    DEBUG←⎕se.SALTUtils.DEBUG   ⍝ only allow debugging if we're in UCMD-DEBUG mode (currently disabled anyway)
     ⍝ return code:                                             0              1              2              3                           4                   5            6                                7                              8                          9
-    ⍝ResultSymbols←↑((⎕ucs(1+⎕se.SALTUtils.CLASSIC)⊃10004 183)'success')('-' 'failure')('t' 'timeout')('n' 'no status file found')('i' 'invalid file')('e' 'error')('c' 'APLCORE while running test')('w' 'WS FULL executing test')('¢' 'classic vs. unicode')('~' 'disabled')
-    ResultSymbols←↑((⎕ucs 183)'success')('-' 'failure')('t' 'timeout')('n' 'no status file found')('i' 'invalid file')('e' 'error')('c' 'APLCORE while running test')('w' 'WS FULL executing test')('¢' 'classic vs. unicode')('~' 'disabled')
+    ResultSymbols←↑((⎕ucs 183)'success')('-' 'failure')('t' 'timeout')('n' 'no status file found (job not executed, see Jenkins-log)')('i' 'invalid file')('e' 'error')('c' 'APLCORE while running test')('w' 'WS FULL executing test')('¢' 'classic vs. unicode')('~' 'disabled')
     If←/⍨   ⍝  AB's father
     cJSON←{1 ⎕JSON ⎕OPT'Compact' 0⊣⍵}
+    _CopyFolder_mode←0    ⍝ 0=normal, ¯1=collect
+
+
+    ∇ (R log)←GetAPI arg
+⍝:: Load CITAs API into ⎕SE.CITA.API
+⍝?: ]GetAPI
+⍝?: needs no arguments. It ensures that the CITA API is loaded into ⎕SE.CITA.API
+⍝UParse:''
+⍝A?: not available for API-calls!
+      R←0 ⋄ log←''
+⍝ no code neccessary! the "Init"-fn in Cita.dyalog (which is executed prior to calling any UCMDs takes care of implemting the functionality...)
+    ∇
+
+
 
     ∇ (R log)←APLVersions arg;k;i;keys;int;exe;bak;cnt;file;json;old;doc;platform;fld;z1;z2;t;old∆;k2;lglv;hlp;args;res;updated
 ⍝:: Reports the current list of local interpreters (or updates it with the right modifieres set)
@@ -44,15 +57,16 @@
 ⍝A?: -compact=2: two-element vector with ids of enabled & disabled interpreters
      
 ⍝ the "standard"-header for the API-Functions takes care of providing help when the fn is called directly
-     
+      var←3
       _InitUCMDs
+      ns←⎕NS''
+      ns.(rc Log)←0 ''
       :If ''=⍥⎕DR arg                              ⍝ if arg is char,
           arg←arg{~∨/⍵⍷⎕C ⍺:⍺,' ',⍵ ⋄ ⍺}'-ucmd=0'  ⍝ this is an API-Call - so be sure to add the -ucmd=0-modifier if we don't see it
           hlp←∨/('-?'⍷⍕arg)                        ⍝ remember if user asked for help
           args←##._Parse arg
           :If hlp                                   ⍝ if he asked for help
-              R←0                                   ⍝ yes, this was successful!
-              log←args                              ⍝ return it (Parse will have put it into its result!)
+              ns.(rc log)←args                              ⍝ return it (Parse will have put it into its result!)
               →0                                    ⍝ and exit
           :EndIf
       :Else
@@ -233,9 +247,10 @@
       :If 1=0 args.Switch'ucmd'
           R←⍬  ⍝ no need to show interpretation of rc when running UCMD
       :EndIf
+      ns.(rc Log)←R log
     ∇
 
-    ∇ {ns}←ExecuteLocalTest arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;legend;symb;summary;exp;Log;jobR;res;keep;resNS
+    ∇ {ns}←ExecuteLocalTest arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;legend;symb;summary;exp;Log;jobR;res;keep;resNS;goto
 ⍝:: Execute local tests
 ⍝?: Execute local tests
 ⍝?:
@@ -286,7 +301,13 @@
       ns←⎕NS''
       res←¯1  ⍝ res=¯1 indicates no test were run!
       Log←''
-      arg←##._Parse arg  ⍝ ensure its a parsed arg...
+      hlp←∨/('-?'⍷⍕arg)                        ⍝ remember if user asked for help
+      arg←##._Parse arg
+      :If hlp                                   ⍝ if he asked for help
+          ns.(rc Log)←0 args                              ⍝ return it (Parse will have put it into its result!)
+          →0                                    ⍝ and exit
+      :EndIf
+     
       :If arg.trace≡1 ⋄ (⍳≢⎕NR 1⊃⎕SI)⎕TRACE 1⊃⎕SI ⋄ :EndIf
       fl←1 ''##._getArg 1 arg  ⍝ fld=folder, fl=path to a CITA.json
       fl←_ExpandEnvVars fl
@@ -318,6 +339,7 @@
       :EndIf
      
       (rc specsObj lg)←_GetTestSpecs fl
+     
       :If rc≠0
           ns.(rc Log)←701('Error processing specs in "',fl,'": ',⍕lg)
           →0
@@ -396,7 +418,7 @@
                           :EndIf
                           →EndForSpec
                       :EndIf
-                      ⎕←'V=',V,', v=',v
+                    ⍝   ⎕←'V=',V,', v=',v
                   :EndIf
               :EndIf
               :If 2=specs.⎕NC'bits'
@@ -434,7 +456,6 @@
      
               log←''
               xin←xin∆,(⍕specs.id),'/'
-              ⎕←'xin=',xin
               :Trap DEBUG↓0
                   3 ⎕MKDIR xin
               :Else
@@ -447,9 +468,9 @@
                       log,←⊂'** Attempt to use counter (',(⍕cnt),') failed as well! Giving up.' ⋄ →EndStep
                   :EndTrap
               :EndTrap
-              ⎕←'xin=',xin
-              ⎕←'fld=',fld
-              ⎕←'---log=',log
+            ⍝   ⎕←'xin=',xin
+            ⍝   ⎕←'fld=',fld
+            ⍝   ⎕←'---log=',log
               :If 0≠xin _CopyFolder fld
                   (res log)←703 'Problem copying files into workdir-folder'
                   →EndStep
@@ -591,16 +612,17 @@
               :EndTrap
      EndForSpec:
               :If 0<≢nsJob.⎕NL ¯2   ⍝ if anything was tested...
-                  (resNS←'t_',(2⊃⎕NPARTS ¯1↓xinO))Results.⎕NS''
+                  ⍝(resNS←'t_',(2⊃⎕NPARTS ¯1↓xinO))Results.⎕NS''
+                  (resNS←'t_',specs.id)Results.⎕NS''
                   resNS←Results⍎resNS
                   resNS.Log←2⊃jobR
                   resNS.rc←rcTest
                   resNS{(⊂⍺ ⍵){⍎'(1⊃⍺).',⍵,'←(2⊃⍺)⍎⍵'}¨⍵.⎕NL ¯2}nsTest
             ⍝      :If 'test'≡step
             ⍝      :AndIf 9=⎕NC'nsTest'
-                  ⎕←⎕JSON nsTest
+                ⍝   ⎕←⎕JSON nsTest
                   :If 2=nsTest.⎕NC'outfile'
-                      ⎕←(≢xinO)↓nsTest.outfile
+                    ⍝   ⎕←(≢xinO)↓nsTest.outfile
                       resNS.outfile←(≢xinO)↓nsTest.outfile
                   :EndIf
               :EndIf
@@ -620,35 +642,36 @@
       ns.Log←Log
       ns.rc←res
       ns.testMat←resTab
-      ⎕←'Results=',cJSON Results
+    ⍝   ⎕←'Results=',cJSON Results
       cmnt←NL,' /***************** Results *******************',NL,(,(⍕resTab),⊂NL),' ****************************/',NL
       (⊂cmnt{⍵[1],⍺,1↓⍵}∊(cJSON Results))⎕NPUT xinO,'CITA.log.json'
     ∇
 
     ∇ info txt;x
 ⍝TODO: better name (or remove it alltogether)...
-      x←⎕SE.UCMD'output.find off'
-      ⎕←(,'ZI4,<->,ZI2,<->,ZI2,< >,ZI2,<:>,ZI2,<:>,ZI2,<.>,ZI3'⎕FMT 1 7⍴⎕TS),', @',(⍕⎕AI[3]-ai3),'ms, ',(2⊃⎕SI),'[',(⍕2⊃⎕LC),']: ',txt
-      ai3←⎕AI[3]
-      {}⎕SE.UCMD'output.find ',4↓x
+      :If DEBUG
+          x←⎕SE.UCMD'output.find off'
+          ⎕←(,'ZI4,<->,ZI2,<->,ZI2,< >,ZI2,<:>,ZI2,<:>,ZI2,<.>,ZI3'⎕FMT 1 7⍴⎕TS),', @',(⍕⎕AI[3]-ai3),'ms, ',(2⊃⎕SI),'[',(⍕2⊃⎕LC),']: ',txt
+          ai3←⎕AI[3]
+          {}⎕SE.UCMD'output.find ',4↓x
+      :EndIf
     ∇
 
-    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt
+    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt;versions;platforms;tests;jns;BIT;sdirD
 ⍝:: Test a remote GitHub-repository
 ⍝?: Test a remote GitHub-repository
 ⍝?:
-⍝?: ]TestRepo [URL]|[org repo]    -branch=<id>  -tag=<id>   -commit=<sha> -pull∊0123456789 [-keep[∊RCcr]] -keeponfailure[∊RCcr] [-int[=180U64...] -jenkins -off -nomail
-⍝Parse:        1-2L               -branch=      -tag=       -commit=      -pull∊0123456789  -keep[∊]RCcr  -keeponfailure[∊]RCcr  -int[∊]"0123456789UCuc_/,.~-all"   -jenkins -off -nomail
+⍝?: ]TestRepo [URL]|[org repo]    -branch=<id>  -tag=<id>   -commit=<sha> -pull∊0123456789 [-keep[∊RCcr]] -keeponfailure[∊RCcr] [-int[=180U64...] -jenkins -off -nomail -platforms=aix|mac|pi|win|linux
+⍝Parse:        1-2L               -branch=      -tag=       -commit=      -pull∊0123456789  -keep[∊]RCcr  -keeponfailure[∊]RCcr  -int[∊]"0123456789UCuc_/,.~-all"   -jenkins -off -nomail -platforms=
 ⍝??: Test a remote GitHub-repository
 ⍝??:
-⍝??: ]TestRepo [URL]|[org repo]    -branch=<id>  -tag=<id>   -commit=<sha> -pull∊0123456789 [-keep[∊RCcr]] -keeponfailure[∊RCcr] [-int[=180U64...] -jenkins -off -nomail
+⍝??: ]TestRepo [URL]|[org repo]    -branch=<id>  -tag=<id>   -commit=<sha> -pull∊0123456789 [-keep[∊RCcr]] -keeponfailure[∊RCcr] [-int[=180U64...] -jenkins -off -nomail -nomail -platforms=aix|mac|pi|win|linux
 ⍝??: <URL>                URL of a repo (can also be a URL of a commit or tag or branch or PR as taken from your browser)
 ⍝??: <org>                name of an organization (i.e. "dyalog" - which is also the default)
 ⍝??: <repo>               name of a repo (i.e. "CITA")
 ⍝??: -jenkins indicates that we are supposed to create the Jenkins jobs that execute the tests on platforms & interpreters
 ⍝??: -off     exit APL after running test
-⍝??; -nomail  do not send status mail (as configured in CITA.json)
-⍝??: as configured in CITA.json[5] in the repository.
+⍝??; -nomail  do not send status mail (if configured in CITA.json[5] in the repository).
 ⍝A?: Error codes (ns.rc):
 ⍝A?: 0 - ok (tests succeeded)
 ⍝A?: 1 - tests were excuted and we had saw at least one test not succeeding
@@ -663,7 +686,14 @@
       ns←⎕NS''
       ns.Log←⍬
       ns.rc←¯1
-      arg←##._Parse arg  ⍝ ensure its a parsed arg...
+     
+      hlp←∨/('-?'⍷⍕arg)                        ⍝ remember if user asked for help
+      arg←##._Parse arg
+      :If hlp                                   ⍝ if he asked for help
+          ns.(rc Log)←0 arg                     ⍝ return it (Parse will have put it into its result!)
+          →0                                    ⍝ and exit
+      :EndIf
+     
       fl←1 ''##._getArg 1 arg
       fl←{(~⎕NEXISTS ⍵)∨'http'≡4↑⎕C ⍵:⍵ ⋄ ∊1 ⎕NPARTS ⍵}fl  ⍝ fld=folder, fl=path to a CITA.json
       sha←''
@@ -730,6 +760,7 @@
               url←'https://api.github.com/repos/',arg._1,'/',arg._2
           :EndIf
           :If ~hasCITA
+          :AndIf arg._2{0=≢⍵:1 ⋄ ~⎕NEXISTS ⍵,⍺,'/CITA.json5'}2 ⎕NQ'.' 'GetEnvironment' 'CITAGetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
           :AndIf ~##.GitHub.HasCITA arg.(_1 _2)
               ns.rc←102
               ns.Log←⊂'Repository ',(∊arg.(_1'/',_2)),' does not contain CITA.json[5]'
@@ -746,10 +777,23 @@
         ⍝   →0
           home←##.Home
           EnableRIDE←0   ⍝ do we want to RIDE into the CITA job?
+          arg.platforms←','(≠⊆⊢)arg.platforms
+⍝TODO: add these to parse & doc. also add versions!
+⍝arg.editions←{⍵=⍥⎕c'u': 'unicode' ⋄ ⍵=⍥⎕c'c': 'classic' ⋄ ⍵}¨','    (≠⊆⊢)arg.editions
+⍝arg.bits←{' '=⍥⎕dr ⍵:2⊃⎕vfi ⍵ ⋄ ⍵}','(≠⊆⊢)arg.bits
      
           (org repo)←arg.(_1 _2)
-          dcwd←2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITAWORKDIR'
+          :If 0=≢dcwd←2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITAWORKDIR'
+              ns.rc←105
+              ns.Log←'Environment variable (or config setting) "DYALOGCITAWORKDIR" not found!'
+              →Exit
+          :EndIf
           wd←dcwd,(~∨/'\/'∊⊢/dcwd)/'/'  ⍝ make sure path ends with '/'
+          :If ~⎕NEXISTS dcwd
+              ns.rc←105
+              ns.Log←'DYALOGCITAWORKDIR not set or invalid! (Value="',dcwd,'")'
+              →Exit
+          :EndIf
           jobName←repo,'_',arg{0::2⊃⍵ ⋄ ⍺⍎⍵}'branch' 'main'
           ⍝xinO←∊1 ⎕NPARTS wd,,('ZI4,ZI2,ZI2,<_>,ZI2,ZI2,ZI2,</',repo,'/>')⎕FMT 1 6⍴⎕TS   ⍝ create name for subfolder of our test
           xinO←∊1 ⎕NPARTS wd,jobName,,('</>,ZI4,ZI2,ZI2,<_>,ZI2,ZI2,ZI2,</>')⎕FMT 1 6⍴⎕TS
@@ -776,8 +820,8 @@
               ns.Log←⊂'xinO on unexpected location!'
               →Exit
           :EndIf
-          ⎕←'xinO=',xinO
-          ⎕←'xinD=',xinD
+        ⍝   ⎕←'xinO=',xinO
+        ⍝   ⎕←'xinD=',xinD
           3 ⎕MKDIR xinO,'CITA'
 ⍝ 675 and below
           :If 0=≢res←2 ⎕NQ'.' 'GetEnvironment' 'CITAGetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
@@ -792,13 +836,14 @@
 ⍝ get the last version of DyalogBuild.dyalog to ensure that we interpreters will use the latest version of ]DTest
               info'Retrieving DyalogBuild.dyalog from GitHub'
               :If 0≠⊃res←(xinO,'CITA/SALT/spice/DyalogBuild.dyalog')##.GitHub.RetrieveFile'https://raw.githubusercontent.com/Dyalog/DBuildTest/master/DyalogBuild.dyalog'
-                  ns.rc←101 
+                  ns.rc←101
                   ns.Log←⊂'Download of DBuildTest repo failed with',2⊃res
                   →Exit
               :EndIf
               rc1←(xinO,repo)##.GitHub.GetFilesFromSHA org repo ⍝sha
           :Else
           ⍝ get these from a local git folder (so we won't need to commit anything that we want to test to Git
+              ⍝_CopyFolder'Collect'
               info'CopyFolder CITA' ⋄ (xinO,'CITA/')_CopyFolder res,'CITA/'
               info'CopyFolder ',repo ⋄ (xinO,repo,'/')_CopyFolder res,repo,'/'
               info'Copy DyalogBuild.dyalog' ⋄ (xinO,'CITA/SALT/spice/DyalogBuild.dyalog')⎕NCOPY res,'DBuildTest/DyalogBuild.dyalog'
@@ -806,7 +851,7 @@
           :EndIf
      
           :If 0≠1⊃rc1
-              ns.rc←101 
+              ns.rc←101
               ns.Log←⊂'Error retrieving repo: ',∊1↓rc1
               →Exit
           :EndIf
@@ -843,7 +888,7 @@
               cmdline←'+s ',cmdline
           :EndIf
           cmdline,←' ENABLE_CEF=0'
-          cmdline,←' DYALOGSTARTUPSE=',2 FixPath xinD,'CITA/StartupSession/'
+        ⍝   cmdline,←' DYALOGSTARTUPSE=',2 FixPath xinD,'CITA/StartupSession/'
           cmdline,←' COMMANDFOLDER=',2 FixPath xinD,'CITA/SALT/spice/'
      
      
@@ -855,7 +900,8 @@
               job←('%xinD%'⎕R(2 FixPath xinD)⎕OPT'Regex' 0)job
               STAGES←''
               LOGFILES←⍬
-              :For platform :In dyalogversions.platforms{6::⍺ ⋄ ⍺∩⍥⎕C(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
+     
+              :For platform :In arg.platforms∩dyalogversions.platforms{6::⍺ ⋄ ⍺∩⍥⎕C(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    script{'
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {' '      script{'
 ⍝ Platform win has label"Windows" with Jenkins
@@ -868,24 +914,19 @@
                   :AndIf 2=dyalogversions.platforms_editions.⎕NC platform
                       EDITIONS←⊆dyalogversions.platforms_editions.⍎platform
                   :EndIf
-                ⍝   EDITIONS←¯2↓dxb∊{0=≢∊⍵:'' ⋄ '"',⍵,'" , '}¨EDITIONS
      
                   BITS←dyalogversions.bits
                   :If 9=dyalogversions.⎕NC'platforms_bits'
                   :AndIf 2=dyalogversions.platforms_bits.⎕NC platform
                       BITS←dyalogversions.platforms_bits⍎platform
                   :EndIf
-                ⍝   BITS←¯1↓dxb∊' ',¨(⍕¨BITS),¨','
      
                   EXTRAS←''
                   :If 9=dyalogversions.⎕NC'platforms_extras'
                   :AndIf 2=dyalogversions.platforms_extras.⎕NC platform
                       EXTRAS←⊆dyalogversions.platforms_extras⍎platform
                   :EndIf
-                ⍝   EXTRAS←¯2↓dxb∊{0=≢∊⍵:'' ⋄ '"',⍵,'" , '}¨EXTRAS
      
-     
-                  ⎕←platform,': ',EDITIONS,' ',BITS
                   file_s←(∊2↑⎕NPARTS file),'-stages-',platform,'.groovy'  ⍝ the stage-file for that platform
                   :If ⎕NEXISTS file_s
                       (ThisStage nlf)←(⎕NGET file_s 1)[1 3]
@@ -893,7 +934,9 @@
                           :For BIT :In BITS
                               :For EDITION :In ⊆EDITIONS
                                   :For EXTRA :In ⊆EXTRAS
-                                      sdir←xinO,platform,'_',version,'_',({1<≢⍵:⍵ ⋄ ''}EXTRA,'_'),EDITION[1],(⍕BIT),'/'
+                                      sdir←xinO,{⍵∩('_.-/',⎕D,⎕A,⎕C ⎕A)}⎕←(platform,{1<≢⍵:'-',⍵ ⋄ '_'}EXTRA,'_'),version,EDITION[1],(⍕BIT),'/'
+                                      ⎕←'sdir=',sdir
+⍝                                      ∘∘∘
                                       3 ⎕MKDIR sdir,repo ⍝ create subfolder for repo
                                       configfile←sdir,'cita.dcfg'
                                       sdirD←xinD,(⍴xinO)↓sdir
@@ -901,6 +944,7 @@
      
                                       ⍝LOGFILES,←⊂sdir,repo,'/CITA.log'
                                       LOGFILES,←⊂sdir,'CITA.log'
+     
                                       :If 'win'≡⎕C platform  ⍝ tweaks for win, suggested by AS, 210819
                                           cfg.Settings.DYALOG_NOPOPUPS←1   ⍝
                                           cfg.Settings.PASSEXCEPTIONSTOOPSYS←0
@@ -909,12 +953,13 @@
                                   :EndFor
                               :EndFor
                           :EndFor
-                          stage,←('%xinD%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R(2 FixPath xinD)(⍕version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(ThisStage)
+                          ⎕←'cmdline=',cmdline
+                          stage,←('%xinD%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R(2 FixPath xinD)(version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(ThisStage)
                           :If 326=⎕DR∊stage ⋄ ∘∘∘
                           :EndIf
                       :EndFor
                   :Else
-                      ns.Log,←⊂⎕←'Skipped platform "',platform,'" - no stage-file with platform-specific code found. (Looked for ',file_s,')'
+                      ns.Log,←⊂'Skipped platform "',platform,'" - no stage-file with platform-specific code found. (Looked for ',file_s,')'
                   :EndIf
                   STAGES,←intro,((⊂'     '),¨stage),'    }' '  }' '}'
                   :If 326=⎕DR∊STAGES ⋄ ∘∘∘
@@ -923,13 +968,23 @@
               p1←⍸∊'%STAGES%'⍷job  ⍝ search string that we will replace with content of var "stages"
               lb←¯1+p1-⌈/⍸((⎕UCS job)∊10 13)∧(⍳≢job)<p1  ⍝ leading blanks of lines (so that we can maintain indent)
               job←((p1-lb)↑job),(∊(⊂lb⍴' '),¨STAGES,¨⊂⎕UCS nlf),{(+/∧\⍵∊⎕UCS 10 13)↓⍵}(p1{⊃(⍵>⍺)/⍵}⍸(⎕UCS job)∊10 13)↓job
-              :If 326=⎕DR∊job ⋄ ∘∘∘
-              :EndIf
               file←xinO,∊1↓⎕NPARTS file
               (⊂job)⎕NPUT file
               info'Wrote job to ',file
               jenk←⎕NEW ##.JenkinsConnection
               jenk.(Debug Cleanup)←1 0
+     
+              :If ~⊃z←jenk.Validate⊃('<script>(.*)</script>'⎕S'\(1)'⍠('Mode' 'M')('DotAll' 1))job
+                  ⎕←'Could not validate job: ',2⊃z
+                  ∘∘∘
+              :EndIf
+            ⍝   info'Copying stuff'
+            ⍝   _CopyFolder'DoIt'
+            ⍝   info'End of copy'
+     
+     
+     
+     
               jenk.LOCKFILE←{⍵(2 FixPath{('/'@('\'∘=))⍵}⍵)}wd,jobName,'.lock-jenkins'
             ⍝   lb←⊃⌽'/'(≠⊆⊢)1⊃⎕NPARTS ¯1↓xinO
               info'Launching job'
@@ -940,18 +995,22 @@
      
               ns.Log,←⊂'Executing job as defined in ',file
               ⍝ns.Log,←'BEGIN of Jenkins log',NL,log,NL,'END of Jenkins log',NL
-              platforms←('(.*)_(.*)_(.*)/'⎕S'\1\3'⎕OPT'Greedy' 0){⍵[⍳¯1+⍵⍳'/']}(≢xinO)↓¨LOGFILES
-              versions←('_(.*)_'⎕S'\1'⎕OPT'Greedy' 0){⍵[⍳¯1+⍵⍳'/']}(≢xinO)↓¨LOGFILES
+              platforms←{'_'(≠⊆⊢)⍵[⍳¯1+⍵⍳'/']}¨(≢xinO)↓¨LOGFILES
+              versions←{2⊃⍵}¨platforms
+              platforms←{1⊃⍵}¨platforms
               tests←{
                   0::' '
                   ((⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET ⍵,'.json').⎕NL ¯9
               }¨LOGFILES
-              ⎕←'LOGFILES'
-              ⎕←LOGFILES
-              ⎕←'tests'
-              ⎕SE.Dyalog.Utils.display tests
-     
-              tests←2↓¨∪⊃¨tests~⊂' '
+              :If 3=|≡tests
+                  tests←⊃,/tests
+              :EndIf
+            ⍝   ⎕←'LOGFILES'
+            ⍝   ⎕←LOGFILES
+            ⍝   ⎕←'tests'
+            ⍝   ⎕SE.Dyalog.Utils.display tests
+            ⍝   ∘∘∘
+              tests←2↓¨∪tests~⊂' '
               vt←((≢tests)/∪versions),[0.5](×/≢¨tests(∪versions))⍴tests
               resTab←((⊂''),(⊂''),∪platforms),vt⍪((≢∪platforms),¯1↑⍴vt)⍴' '
               rc∆←0
@@ -959,12 +1018,14 @@
               html←'<html>',NL
               html,←' <head>',NL
               html,←'  <meta charset="utf-8">',NL
+              html,←'  <meta name="viewport" content="width=device-width, initial-scale=1">',NL
               html,←'  <style>',NL
               html,←'   .ok {background-color: lightgreen;}',NL
               html,←'   .fail {background-color: lightsalmon;}',NL
               html,←'   table {border-spacing: 0; border-collapse: collapse; border: 2px solid rgb(200,200,200);}',NL
               html,←'   .legend {background-color: lightyellow; border:  2px black solid;display: inline-block;padding: 10px;}',NL
               html,←'   td {text-align: center; border: 1px solid rgb(190,190,190);padding: 10px 20px;}',NL
+              html,←'   .head {background-color: lightgray; font-weight: bold;}'
               html,←'  </style>',NL
               html,←'  <title>',tit,'</title>',NL
               html,←' </head>',NL
@@ -993,7 +1054,7 @@
                           :EndTrap
                       :EndFor
                   :Else
-                      ⎕←'Logfile not found: ',(i⊃LOGFILES),'.json'
+                    ⍝   ⎕←'Logfile not found: ',(i⊃LOGFILES),'.json'
                       :If DEBUG
                           ⎕←':trapped something!'
                           ⎕←cJSON ⎕DMX
@@ -1006,16 +1067,16 @@
                       resTab[2+r;1+c]←⊂'n'
                       ht[2+r;1+c]←LOGFILES[i]
                   :EndTrap
-                  ⎕←LOGFILES[i],'→ r=',r,', c=',c,', resTab=',resTab[2+2;1+c]
+                ⍝   ⎕←LOGFILES[i],'→ r=',r,', c=',c,', resTab=',resTab[2+2;1+c]
               :EndFor
               :If DEBUG ⋄ ⎕←'ht:' ⋄ ⎕←ht ⋄ :EndIf
               ns.resTab←resTab
               ht←resTab{
                   z←(⍺≢'n')∧(0<≢⍵)∧1=≢⍺
                   c←(z/'    <a href="',(('/devt'⎕R'//nas00.dyalog.bramley/devt')⍵),'">'),⍺,z/'</a>'
-                  '<td',((1=≢⍺)/' class="',((1+⍺≢ResultSymbols[1;1])⊃'ok' 'fail'),'"'),'>',c,'</td>',NL
+                  '<td',(((⍺≢⍥,' ')∧1=≢⍺)/' class="',((1+⍺≢ResultSymbols[1;1])⊃'ok' 'fail'),'"'),'>',c,'</td>',NL
               }¨ht
-              ht[1;1]←⊂'<td rowspan=2></td>',NL
+              ht[1;1]←⊂'<td rowspan=2 class="head"></td>',NL
               ht[2;1]←⊂''
               ht←∊(⊂'   <tr>',NL,'    '),ht,⊂'   </tr>',NL
               ht←'  <table cellspacing="0" cellpadding="2">',NL,ht,NL
@@ -1031,6 +1092,13 @@
                       '<b>',⍵[1],'</b>',1↓⍵,', '}¨{(∨\⍵≠' ')/⍵}¨{','(≠⊆⊢)∊⍵
                   }1↓⍵
               }1↓_AddLegend 1 0↓resTab),'<p>',NL
+     
+              :If 2=jns.⎕NC'StageTab'
+                  html,←'<h3>Failed stages</h3>',NL
+                  html,←jns.StageTab
+              :EndIf
+     
+     
               html,←'  <br>RunTime: %ms',NL
               html,←' </body>',NL
               html←html,'</html>',NL
@@ -1128,6 +1196,10 @@
      Exit:
       ns.Runtime←⎕AI[3]-_ai3
       info'Runtime = ',{(⍕⍵),', approx. ',(⍕⌊⍵÷60000),' min'}ns.Runtime
+      :If 0=⎕NC'xinO'
+      :OrIf ~⎕NEXISTS xinO
+          →0
+      :EndIf
       :If ⎕NEXISTS xinO,'CITA.log.html'
      ⍝ it might be unneccessarily accurate to really compute the timing here (and then inject it into the file), but hey...
           r←1⊃⎕NGET xinO,'CITA.log.html'
@@ -1157,7 +1229,6 @@
       ns.log←''
       dws←cmd←''  ⍝ Arguments for constructor of APLProcess
       ns.R←0
-      DEBUG←1  ⍝ TODO: remove this!
       →(0=≢cfg_specs_interpreter)/EOF
       (cfg specs interpreter)←3↑⊆cfg_specs_interpreter
       file←specs{6::'' ⋄ ⍺⍎⍵}step
@@ -1179,6 +1250,8 @@
      
       cfg,←' CITA_Log="',(∊2↑⎕NPARTS 1⊃StatusFiles),'"'
       cfg,←' APLCORENAME="',(aplcore←xin,({¯1↓(1=⌽+\⌽⍵='/')/⍵}xin),'_CORE_',step,'.'),'"'
+    ⍝   ⎕←'xin=',xin
+    ⍝   ⎕←'APLCORENAME=',aplcore
       :If 0<≢t←2 ⎕NQ'.' 'GetEnvironment' 'COMMANDFOLDER'
           ⍝ if CMDFOLDER was set when we were called...
           cfg,←' COMMANDFOLDER="',t,'"'   ⍝ let the process use it, too
@@ -1210,7 +1283,6 @@
           ns.(R log)←4('Did not recognize type of file "',file,'"') ⋄ →EndJob
       :EndSelect
       :If ⎕SE.SALTUtils.DEBUG
-        ⍝   cmd,←' UDEBUG=on'
       :EndIf
       outfile←xin,'output.txt'
       ns.outfile←outfile
@@ -1220,7 +1292,7 @@
     ⍝  ∘∘∘
     ⍝  600⌶0
       :If ∨/'classic'⍷⎕C interpreter
-          cmd,←' DYALOG_NETCORE=0'    ⍝ might be too baas-specific, but with a global EnvVar hanging around, this is the only way to disable it...
+          cmd,←' DYALOG_NETCORE=0'    ⍝ make sure that we don't attempt to use .NET Core
       :EndIf
       WSFULL←0  ⍝ has the test hit a WS FULL?
       GhostRiderFlag←0  ⍝ 0=don't use it at all, 1=use CitaRider (a specifically tailored variant of Ghostrider) to deal with APLProcess
@@ -1232,7 +1304,7 @@
           :EndIf
           port←55455
          ⍝ :If DEBUG ⋄
-          ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile
+        ⍝   ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile
         ⍝  :EndIf
           proc←⎕NEW ##.APLProcess(dws cmd(interpreter{0::0 ⋄ ⍺⍎⍵}'exe')('serve:127.0.0.1:',⍕port)outfile xin) ⋄ ai3←⎕AI[3]
           proc.psLogFile←xin,'/pslog.txt'
@@ -1304,7 +1376,13 @@
           ⎕←'fpat=',(∊2↑⎕NPARTS 1⊃StatusFiles),'.*'
           ⎕←'ninfo=',⊃0(⎕NINFO ⎕OPT'Wildcard' 1)(∊2↑⎕NPARTS 1⊃StatusFiles),'.*'
       :EndIf
-      :If ⎕NEXISTS aplcore ⋄ ns.log←'Test led to an APLCORE: ',aplcore ⋄ ns.R←6 ⋄ →EndJob ⋄ :EndIf
+      :If ⎕NEXISTS aplcore
+          ns.log←'Test led to an APLCORE: ',aplcore
+          ns.R←6
+          (info←_GetCoreInfo aplcore)⎕NPUT aplcore,'.txt'
+          ns.info←info
+          →EndJob
+      :EndIf
       :If ⎕NEXISTS ns.logFile←(∊2↑⎕NPARTS 1⊃StatusFiles),'.wsfull' ⋄ ns.R←7 ⋄ →EndJob ⋄ :EndIf
       :If WSFULL ⋄ ns.R←7 ⋄ →EndJob ⋄ :EndIf
       :If ⎕NEXISTS ns.logFile←3⊃StatusFiles ⋄ ns.R←0 ⋄ →EndJob ⋄ :EndIf
@@ -1322,7 +1400,7 @@
               ns.log←'Test created logfile "',(1⊃StatusFiles),'" to indicate APL Errors while executing tests. More info might be found in it and in the APL Session-log "',outfile,'"'
               ns.R←5
           :EndIf
-          ⎕←'log=',ns.log
+        ⍝   ⎕←'log=',ns.log
           →EndJob
       :EndIf
       ns.R←3
@@ -1362,7 +1440,7 @@
                   spec←(⊂'teardown'){0=⍵.⎕NC ⍺:⍵⊣⍵⍎⍺,'←''''' ⋄ ⍵}¨spec
                   spec.secondstimeout←spec{6::⍵ ⋄ ⍺.secondstimeout}Timeout
                   cnt+←1
-                  spec.id←spec{6::⍵ ⋄ ⍺⍎'id'}'nr',⍕cnt
+                  spec.id←spec{6::⍵ ⋄ ⍺⍎'id'}('nr',⍕cnt),'_',2⊃⎕NPARTS spec.test
                   rspec,←spec
               :EndIf
           :EndFor
@@ -1377,47 +1455,81 @@
 
 
 
-    ∇ {R}←to _CopyFolder from;hf;n;t;h;td
+    ∇ {R}←{to}_CopyFolder from;hf;n;t;h;td
     ⍝ can't use ⎕NCOPY because that would also copy hidden files/directories - which would really hurt in the case of ".git"
     ⍝ R is returncode. Values: 0=ok
     ⍝                          1=problems copying file
     ⍝                          2=problems creating a folder
+    ⍝ {to} is optional: if it is undefine, "from" sets the mode:
+    ⍝ "Collect": build matrix "_CopyBuffer" as a list of from|to
+    ⍝ "DoIt": copy according to buffer...
       R←0
-      from←∊1 ⎕NPARTS from ⍝ normalize it
       hf←⍬
-      :For (n t h) :In ↓[1]↑0 1 6(⎕NINFO ⎕OPT('Wildcard' 1)('Recurse' 1))(from,'*')   ⍝ get name, type & hidden-status
-          :If ~∨/'.git'⍷n  ⍝ exclude .git*!
-              hf,←(h∧t=1)/⊂n ⍝ list of hidden directories
+      :If 0=⎕NC'to'
+          :Select from
+          :Case 'Collect'
+              _CopyFolder_mode←¯1
+              _CopyFolder_list←0 2⍴⊂''
+              →0
+          :Case 'DoIt'
+              ⎕←(≢_CopyFolder_list),' Files in copylist'
+              _CopyFolder_mode←1
+          :Else
+              ⎕←'_CopyFolder: Unknown mode "',from,'"'
+              R←1 'Unknown mode "',from,'"'
+              →0
+          :EndSelect
+      :EndIf
+      from←∊1 ⎕NPARTS from ⍝ normalize it
+     
+      :Select _CopyFolder_mode
+      :Case ¯1   ⍝ collect
+          _CopyFolder_list←'_CopyFolder_list'{6::1 2⍴⍵ ⋄ (⍎⍺)⍪⍵}to from
+          →R←0
+      :Case 0     ⍝ normal copy
+          _CopyFolder_list←1 2⍴to from
+      :Case 1
+          ⎕←'_CopyFolder: copying ',(≢_CopyFolder_list),' files:'
+          ⎕SE.Dyalog.Utils.display _CopyFolder_list
+      :Else
+          ⎕←'Unknow _CopyFolder_mode=',⍕_CopyFolder_mode
+      :EndSelect
+     
+      :For (to from) :In ↓_CopyFolder_list
+          :For (n t h) :In ↓[1]↑0 1 6(⎕NINFO ⎕OPT('Wildcard' 1)('Recurse' 1))(from,'*')   ⍝ get name, type & hidden-status
+              :If ~∨/'.git'⍷n  ⍝ exclude .git*!
+                  hf,←(h∧t=1)/⊂n ⍝ list of hidden directories
             ⍝   ⎕←'_CopyFolder, n,t,h= ',n,',',t,',',h
-              :If h=1 ⋄ :Continue ⋄ :EndIf
-              :If 0<≢hf ⋄ :AndIf 1∊hf{⍺≡(≢⍺)↑⍵}¨⊂n ⋄ :Continue ⋄ :EndIf ⍝ file from a hidden folder
-              :If 1=t  ⍝ directory
-                  :If from≡(≢from)↑n
-                      :Trap DEBUG↓0
-                          3 ⎕MKDIR to,(≢from)↓n ⋄ :Continue
+                  :If h=1 ⋄ :Continue ⋄ :EndIf
+                  :If 0<≢hf ⋄ :AndIf 1∊hf{⍺≡(≢⍺)↑⍵}¨⊂n ⋄ :Continue ⋄ :EndIf ⍝ file from a hidden folder
+                  :If 1=t  ⍝ directory
+                      :If from≡(≢from)↑n
+                          :Trap DEBUG↓0
+                              3 ⎕MKDIR to,(≢from)↓n ⋄ :Continue
+                          :Else
+                              R←2
+                              →0
+                          :EndTrap
                       :Else
-                          R←2
-                          →0
-                      :EndTrap
+                          ⎕←'Paranoia justified!'
+                          ∘∘∘
+                      :EndIf
                   :Else
-                      ⎕←'Paranoia justified!'
-                      ∘∘∘
-                  :EndIf
-              :Else
-                  :If ⎕NEXISTS to,(≢from)↓n
-                      ⎕←'Paranoia justified - attempted to re-copy "',from,'" to "',to,'"'
-                      ⎕←'to,(≢from)↓n = ',to,(≢from)↓n
-                      :Continue
-                  :EndIf
-                  :If ~⎕NEXISTS td←1⊃⎕NPARTS to,(≢from)↓n  ⍝ does the target dir exist?
-                      3 ⎕MKDIR td
-                  :EndIf
-                  :If 1≠(to,(≢from)↓n)⎕NCOPY n
-                      R←1
-                      →0
+                      :If ⎕NEXISTS to,(≢from)↓n
+                          ⎕←'Paranoia justified - attempted to re-copy "',from,'" to "',to,'"'
+                          ⎕←'to,(≢from)↓n = ',to,(≢from)↓n
+                          :Continue
+                      :EndIf
+                      :If ~⎕NEXISTS td←1⊃⎕NPARTS to,(≢from)↓n  ⍝ does the target dir exist?
+                          3 ⎕MKDIR td
+                      :EndIf
+                      :If 1≠(to,(≢from)↓n)⎕NCOPY n
+                          R←1
+                          →0
+                      :EndIf
                   :EndIf
               :EndIf
-          :EndIf
+          :EndFor
       :EndFor
       R←0
     ∇
@@ -1608,6 +1720,69 @@
      Exit:
     ∇
 
+      _GetCoreInfo←{
+          0=≢R←_GetInfo2 ⍵:_GetInfo ⍵ ⋄ R ⍝ if we don't find it in the ⎕MAPped files, try ⎕NREAD
+      }
+
+    ∇ r←_GetInfo wsdump;tn;interestinginfo;size;fptr;blksz;bytes;ix;ctype
+⍝ this is taken from undowsdump.ws that I got from AS, saying DB wrote it.
+⍝ It extracts the "interesting information" from an APLCORE passed as ⍵
+⍝ this uses ⎕NREAD to read through the file....
+      r←''
+      interestinginfo←(⎕UCS 10),'========================== Interesting Information'
+      ctype←⎕DR' '
+      fptr←0
+      blksz←100000
+      :Trap 0
+          tn←wsdump ⎕NTIE 0
+      :Else
+          →0
+      :EndTrap
+      size←⎕NSIZE tn
+      :While fptr<size
+          bytes←⎕NREAD tn,ctype,blksz,fptr
+          ix←interestinginfo⍷bytes
+          :If ∨/ix
+              fptr←fptr+¯1+ix⍳1
+              blksz←size-fptr
+              ⎕EX'bytes'
+              r←⎕NREAD tn,ctype,blksz,fptr
+              ⎕NUNTIE tn
+              :If ctype=80
+                  r←'UTF-8'⎕UCS ⎕UCS r
+              :EndIf
+              r←1↓¨(r=⎕UCS 10)⊂r
+              →0
+          :Else
+              fptr+←blksz-⍴interestinginfo               ⍝ Allow for cross-block case
+          :EndIf
+      :EndWhile
+      ⎕NUNTIE tn
+    ∇
+
+    ∇ r←_GetInfo2 wsdump;tn;ix;ctype;interestinginfo;LF
+⍝ this is taken from undowsdump.ws that I got fromAS, saying DB wrote it
+⍝ it extracts the "interesting information" from an APLCORE passed as ⍵
+⍝ #2 uses ⎕MAP which is preferred (but I had a test case where GetInfo2 did not find the info - and GetInfo did)
+      r←''
+      LF←⎕UCS 10
+      interestinginfo←LF,'========================== Interesting Information'
+      ctype←⎕DR' '
+      :Trap 0
+          r←interestinginfo{
+              ix←{1≠+/⍵:⎕IO+≢⍵
+                  ⍵⍳1
+              }⍺⍷⍵
+              ix↓⍵
+          }ctype ¯1 ⎕MAP wsdump
+          :If ctype=80
+              r←'UTF-8'⎕UCS ⎕UCS r
+          :EndIf
+          r←{1↓¨(⍵=LF)⊂⍵}LF,r
+      :EndTrap
+    ∇
+
+
     :endsection
 
 
@@ -1661,6 +1836,9 @@
           :EndFor
           :If 0∊(≢parse),≢desc  ⍝ if either description or parsing rules are undefined, ignore this fn!
               :Continue
+          :EndIf
+          :If parse≡''''''   ⍝ use '' for niladic UCMDs!
+              parse←''
           :EndIf
      
           j,←',"Parse":',_quote parse

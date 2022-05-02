@@ -1,0 +1,43 @@
+#!/bin/sh
+# this is based on Jason's install-dyalog-nightly
+# no modifications!
+VERSION=${1-18.2}
+TYPE=${2-unicode}
+BITS=${3-64}
+VERSION_ND=$(echo ${VERSION} | sed 's/\.//g')
+        OS=`cat /etc/*release | grep -v 'PRETTY_NAME=' | grep -v 'DISTRIB_CODE' | grep "NAME=" | sed 's/NAME=//;s/"//g' | head -1`
+PRETTY_NAME=`cat /etc/*release | awk -F"=" '/PRETTY_NAME/ {print $2}' | sed 's/"//g'`
+
+echo "Running QA on ${PRETTY_NAME}"
+
+if [ "$(whoami)" = "root" ]; then
+        SUDO=""
+else
+        SUDO=sudo
+fi
+case $OS in
+
+        CentOS*|Fedora|openSUSE|"openSUSE Leap")
+                echo "installing Dyalog using file: /devt/${VERSION}/take/mdyalog/linux/${BITS}/${TYPE}/`date +%Y%m%d`/dyalog-${TYPE}*.rpm"
+                $SUDO rpm -U /devt/${VERSION}/take/mdyalog/linux/${BITS}/${TYPE}/`date +%Y%m%d`/dyalog-${TYPE}*.rpm
+                if [ "$VERSION_ND" -lt "170" ]; then
+                        /opt/mdyalog/${VERSION}/64/unicode/make_scripts
+                fi
+                ;;
+        Debian*|Ubuntu)
+                echo "installing Dyalog using file: /devt/${VERSION}/take/mdyalog/linux/${BITS}/${TYPE}/`date +%Y%m%d`/dyalog-${TYPE}*.deb"
+                $SUDO dpkg -i /devt/${VERSION}/take/mdyalog/linux/${BITS}/${TYPE}/`date +%Y%m%d`/dyalog-unicode*.deb
+                ;;
+        *)
+                echo "OS not found in list ($OS)"
+                echo "installing Dyalog using file: /devt/${VERSION}/take/mdyalog/linux/${BITS}/${TYPE}/`date +%Y%m%d`/dyalog-${TYPE}*.tar.gz"
+                mkdir -p /opt
+                $SUDO tar -xf /devt/${VERSION}/take/mdyalog/linux/${BITS}/${TYPE}/`date +%Y%m%d`/dyalog-${TYPE}*.tar.gz -C /opt/
+                if [ "$VERSION_ND" -lt "170" ]; then
+                        $SUDO /opt/mdyalog/${VERSION}/${BITS}/${TYPE}/make_scripts
+                fi
+                ;;
+esac
+
+
+

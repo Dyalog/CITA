@@ -1,4 +1,4 @@
-﻿ lx arg;v;Env;subj;ext;r;z;s;cmd;y;log;wsFullReport;⎕RL;⎕ML;⎕IO;rc;path;NL;CITA_Log;dmx;DEBUG;res;cf;d;Because;Check;Fail;HandleError;IsNotElement;eis
+ lx arg;v;Env;subj;ext;r;z;s;cmd;y;log;wsFullReport;⎕RL;⎕ML;⎕IO;rc;path;NL;CITA_Log;dmx;DEBUG;res;cf;d;Because;Check;Fail;HandleError;IsNotElement;eis
  ⍝ OFF with returncode 42: all is well, 43: error, 44: WS
 ⍝ (0,⍳300)⎕TRACE'lx'  ⍝ trace is buggy - don't use it! (need http://mantis.dyalog.com/view.php?id=19349 to be fixed...)
  Env←{2 ⎕NQ'.' 'GetEnvironment'⍵}  ⍝ get environment variable or cmdline
@@ -71,7 +71,7 @@
      :If DEBUG ⋄ ⎕←'Setting OUTPUT.Find' ⋄ :EndIf
      :Trap 0   ⍝ might not be present on older versions...
         ⍝  :If DEBUG ⋄
-         ⎕←⎕SE.UCMD'output.find on -includequadoutput -ts' ⋄
+         ⎕←⎕SE.UCMD'output.find on -includequadoutput -timestamp' ⋄
         ⍝   :EndIf
      :Else
          ⎕←↑⎕DM
@@ -224,7 +224,7 @@ End:
                  ⎕←']TheUCMDres←',subj
              :EndIf
              TheUCMDres←⎕SE.UCMD subj
-             :If DEBUG ⋄ ⎕←'TheUCMDres=',rheUCMDres ⋄ :EndIf
+             :If DEBUG ⋄ ⎕←'TheUCMDres=',TheUCMDres ⋄ :EndIf
          :Else
              subj HandleError ⎕←'Error executing UCMD',NL,∊⎕DM,¨⊂NL
          :EndTrap
@@ -251,7 +251,7 @@ End:
          →0
      :Else
          ⎕←'No idea why you called me...!'
-         ⎕←'Hint: could not find "CITAtest" in environment...'
+         ⎕←'Hint: could not find "CITAtest" or "RunUCMD" or in environment...'
          ∘∘∘
      :EndIf
 

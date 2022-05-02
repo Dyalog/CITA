@@ -1,14 +1,19 @@
-:namespace UCMD
+﻿:namespace UCMD
 ⍝ UCMD Driver for CITA.
 ⍝ Cita.dyalog in SALT/Spice is the immutable cover that SALT needs to recognize the UCMDSs.
-⍝ In order to handle Run/List/Help, those fns falls the fns in this ns which
-⍝ uses the API-Fn "_InitUCMDs" to setup the variables _List/_Help which are then
+⍝ In order to handle Run/List/Help, those fns call the fns in this ns which
+⍝ use the API-Fn "_InitUCMDs" to setup the variables _List/_Help that are then
 ⍝ used to create the info for SALT etc.
 
     ⎕ML←⎕io←1
 
     ∇ {r}←Run(cmd args);res;⎕ML;l;rc;log
       :If 3=⎕NC'##.API.',cmd               ⍝ if function exists in ⎕SE.CITA...
+      :if ' '=⍥⎕dr args ⍝ this can only happen for a niladic UCMD (such as GetAPI)
+      args←⎕ns'' 
+      args._1←''
+      args.SwD←0 2⍴''
+      :endif
           args.SwD⍪←'ucmd' 1 ⋄ args.ucmd←1  ⍝ indicate to the fn that it is called via UCMD
           :trap ⎕se.SALTUtils.DEBUG↓0
           (rc log)←{9=⎕nc'⍵':⍵.(rc Log) ⋄ ⍵}⍎'##.API.',cmd,' args'  ⍝ execute it...
@@ -22,9 +27,8 @@
           :If rc≡⍬
               r←⍬   ⍝ optionally API-fns may return rc as ⍬ which is an indicator to ommit the header (for "simple" things like reports in ]APLVersion)
           :Else
-          ⎕←'rc=',rc
               r←cmd,': ',{uw←∪⍵ ⋄ uw≡,0:'success' ⋄ uw≡,¯1:'warning' ⋄ ('*** '/⍨(,0)≢uw),('FAILURE' 'DIVERSE RESULTS'⊃⍨1+1<≢uw),' (return code',('s'/⍨1<≢uw),'=',(⍕∪⍵),')'}∊rc
-              ⎕←'r=',r
+              ⍝⎕←'r=',r
               r←l r(l←(⌈/(≢r),≢¨log)⍴'─~-'[0 ¯1⍳⊃,rc])   ⍝ NB: "─" is shown as "." in AIX Classic logs
           :EndIf
           r←r,⊆log
@@ -36,16 +40,16 @@
     ∇
 
     ∇ r←List;findLine;nr;fn;ns;hd;maxH
-      :If ⎕SE.SALTUtils.V18
+      :If ⎕SE.SALTUtils.V18  ⍝ we need v18!
           r←⎕JSON ##.UCMD._List
-      :Else
-          r←''
+      :Else 
+          r←''               ⍝ will not expose any commands on earlier versions
       :EndIf
      
     ∇
 
     ∇ r←level Help cmd;col
-    ⍝ This is the only function within this set that could also be called in a non-UCMD contesxt
+    ⍝ This is the only function within this set that could also be called in a non-UCMD context
     ⍝ (when a developer uses the session to call an API-Fn asking for help - with a "-?" argument!)
       col←3  ⍝ which col of the Help-Table do we need?  (3=UCMD, 4=API)
       col←col+'_Parse'≡2⊃⎕SI   ⍝ if we're called from _Parse, we need to return the help for the API

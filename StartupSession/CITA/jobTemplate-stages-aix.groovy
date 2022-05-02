@@ -20,14 +20,15 @@ stage ("aix_%CITA_VERSION%_%VERSION%") {
               cmdlinePre = "APLT1=utf8 APLT2=utf8 APLK0=utf8 "
             }
             E = EDITION.take(1)
-            testPath="%xinD%aix_%VERSION%_${P}_${E}${BITS}/"
-            cmdline = "%CMDLINE% citaDEVT=${citaDEVT} USERCONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
+            testPath="%xinD%aix_%VERSION%${P}${E}${BITS}/"
+            //cmdline = "%CMDLINE% citaDEVT=${citaDEVT} USERCONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
+            cmdline = "%CMDLINE% citaDEVT=${citaDEVT} USERCONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log CITADEBUG=1"
             cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
 
             echo "Launching $cmdlinePre $exePath $cmdline "
             // sh "$exePath $cmdline" 
-            rcj =  sh(script: "$cmdlinePre $exePath $cmdline" , returnStatus: true)
-            echo "returncode=$rcj"      
+            rc =  sh(script: "$cmdlinePre $exePath $cmdline" , returnStatus: true)
+            echo "returncode=$rc"      
             exists = fileExists("${testPath}CITA.log.ok")     
             if (exists) {
               echo "Test succeeded"

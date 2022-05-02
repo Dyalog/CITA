@@ -1,9 +1,12 @@
  {res}←{larg}_getAPI(fn rarg)
  ⍝ execute API-Fn with rarg and optional larg (in a UCMD)
- ⎕←'getAPI'
  ⍝ inject ucmd-Switch as an indicator of a call via UCMD ;)
- rarg.ucmd←1
- rarg.SwD⍪←'ucmd'1
- :If 0=⎕NC'larg' ⋄ res←⍎'API.',fn,' rarg'
- :Else ⋄ res←⍎'larg API.',fn,' rarg'
+ :If 326=⎕DR rarg  ⍝ if rarg is a namespace we're called by a UCMD
+     rarg.ucmd←1
+     rarg.SwD⍪←'ucmd' 1
+ :EndIf
+ :If 0=⎕NC'larg'
+     res←⍎'API.',fn,' rarg'
+ :Else
+     res←⍎'larg API.',fn,' rarg'
  :EndIf

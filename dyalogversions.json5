@@ -10,8 +10,8 @@
         "aix",
         "mac",
         "pi",
-        // "win",
-        //"linux",
+        "win",
+        "linux",
         
     ],
     platforms_editions: {
@@ -25,9 +25,12 @@
     },
     platforms_extras: {
         aix: [
-           "p8",
+          // "p8",//20220408: no longer build - but might be needed again
             "p9",
           //  "p10"
-            ]
+            ],
+        linux: [// names of the docker images we want to use...
+            "ubuntu:20.04"
+        ]
     }
 }

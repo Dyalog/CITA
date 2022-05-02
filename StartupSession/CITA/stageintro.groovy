@@ -1,6 +1,5 @@
 def E=""
 def rc=-1
-def rcj=-1
 def citaDEVT="/devt/"
 def testPath=""
 def CITAlog=""

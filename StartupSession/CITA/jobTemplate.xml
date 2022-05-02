@@ -14,6 +14,12 @@
   <properties/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.87">
     <script>
+    def nodetest() { 
+      sh('echo "alive on $(hostname)"') 
+    } 
+    def nodetestWIN() { 
+      bat('echo "alive on $(hostname)"') 
+    } 
     pipeline {
       agent any
       options { 
@@ -29,6 +35,7 @@
             catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
               script {
                 def citaDEVT = "/devt/"
+                echo "This job is executed in: %xinD%"  // might be useful to be explicit about it...
                 sh "/opt/mdyalog/18.2/64/unicode/p9/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%.."                             
                 sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
               }
@@ -46,7 +53,8 @@
           }
           steps {
             script {
-              catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+              //catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+              try {
                 def citaDEVT = "/devt/"
                 // permissions for everything in the test's folder
                 // no longer needed...
@@ -57,6 +65,9 @@
                 if (LOCKFILE != "") {
                   sh "rm $LOCKFILE"
                 }
+              } catch (err) {
+                echo "Caught error: ${err}"
+                unstable("Stage failed!")
               }
             } 
           }

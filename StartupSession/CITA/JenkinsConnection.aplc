@@ -27,6 +27,7 @@
         ∇
     :endproperty
 
+
     ∇ New0
       :Implements constructor
       :Access   public
@@ -86,7 +87,11 @@
       :If res.rc=0
           :If opt=0
               :Trap 0
-                  R←⎕JSON res.Data
+                  :If 9=res.⎕NC'Data'
+                      R←res.Data
+                  :Else
+                      R←⎕JSON res.Data
+                  :EndIf
               :Else
                ⍝ Could not JSONify res.Data!
                ⍝ happens for example with http://jenkinstest.dyalog.bramley/job/MB-Test1/1/consoleText/api/json  (despite /api/json suffix!)
@@ -141,8 +146,9 @@
       :If res.rc=0
       :AndIf res.HttpStatus∊200 201
           R←res.(rc Data)
-          ⎕←'─── Called ',url,' and got this'
-          ⎕←(⎕JSON⍠'Compact' 0)res.Data
+        ⍝   ⎕←'─── Called ',url,' and got this'
+          ⎕←'post url=',url,' | res='
+          ⎕←{0::⍵ ⋄ (⎕JSON⍠'Compact' 0)⍵}res.Data
           :If retC=1
               R←res h
           :EndIf
@@ -157,6 +163,8 @@
           :Else
               ⎕←'Call to "',url,'" did not end with rc=0 (and HttpStatus=200)'
               ⎕←res,'    ⍝ res'
+              ⎕←'This might be an indicator of errors in the Jenkins script....'
+              ⎕←(⎕JSON⍠('HighRank' 'Split')('Compact' 0))res
               (1+⊃⎕LC)⎕STOP⊃⎕SI
           :EndIf
       :EndIf
@@ -166,12 +174,38 @@
 
 
     :section Public Methods
-
+    ∇ (bool msg)←{filename}Validate job
+      :Access public
+  ⍝ validates job contained in vtv ⍵  OR file ⍺  (if filename is deined, it will be used)
+      :If 2=⎕NC'filename'
+          job←1⊃⎕NGET filename
+      :EndIf
+     
+      (bool msg)←('jenkinsfile'job)post CISERVER,'/pipeline-model-converter/validate'
+      :If bool≢0
+          ⎕←'Syntax check returned...'
+          ⎕←'bool=',bool
+          ⎕←'msg=',msg
+          ∘∘∘
+      :EndIf
+      :If ~bool←∨/'Jenkinsfile successfully validated'⍷msg
+          ⎕←'Syntax check returned...'
+          ⎕←'msg=',msg
+          ∘∘∘
+      :EndIf
+     
+     
+    ∇
 
     ∇ ns←file RunJob jobname;h;con;⎕TRAP;r;bin;url;res;sink;cv;binPre;binPost;rdbl;ns;rc
       :Access public
       :If ''≢1⊃LOCKFILE
+          z←1
           :While ⎕NEXISTS 1⊃LOCKFILE
+              :If z
+                  ⎕←'Waiting until existing LOCKFILE is removed...'
+                  z←0
+              :EndIf
           :EndWhile
           (⊂⍕⎕TS)⎕NPUT 1⊃LOCKFILE
       :EndIf
@@ -188,6 +222,10 @@
       JOBNAME←'CITA_',jobname
       url←CISERVER,'/createItem?name=',JOBNAME
       bin←1⊃⎕NGET file
+      :If ' '≠⍥⎕DR bin
+          ⎕←'⎕DR bin = ',(⎕DR bin),' - expect trouble!'
+          ⎕←'Check script for these characters: ',∪((⎕DR' ')≠∊⎕DR¨bin)/bin
+      :EndIf
     ⍝   :If 0<≢load_workspace
     ⍝       dws←∊1↓⎕NPARTS load_workspace
     ⍝       ('u:\apltools\CITA\',dws)(⎕NCOPY⍠'IfExists' 'Replace')load_workspace
@@ -199,9 +237,9 @@
       ⍝ pragmatic, quick solution. does not handle nested structures and has no :else-part.
       :While 0<⍴i←(':if'⍷bin)/⍳⍴bin
           pre←(i[1]-1)↑bin
-          ⎕←if←{(¯1+⍵⍳⎕UCS 10)↑⍵}(i[1]+2)↓bin
+          if←{(¯1+⍵⍳⎕UCS 10)↑⍵}(i[1]+2)↓bin
           :Trap 0
-              ⎕←if←(,1)≡,⍎if
+              if←(,1)≡,⍎if
           :Else
               if←0
           :EndTrap
@@ -230,6 +268,7 @@
       bin←('%LOCKFILE%'⎕R(2⊃LOCKFILE)⍠('Regex' 0))bin
  ⍝     ⎕←'file=',file
 ⍝      (⎕lc[1]+1)⎕stop 1⊃⎕si
+     
       bin←('&(?![a-z]*;)'⎕R'&amp;')bin
       bin←('"' '''' '%cmdline%' '<' '>'⎕R'&quot;' '&apos;'Commandline'&lt;' '&gt;'⍠('Regex' 0))bin
      
@@ -260,6 +299,7 @@
     ⍝ ## Run the jenkins job
     ⍝ echo "Running Job"
     ⍝ curl -s -XPOST "${CISERVER}/job/${JOBNAME}/build" -H "$CRUMB" -u $CREDS
+     
       :If debug ⋄ ⎕←'Running job' ⋄ :EndIf
       (r h)←1 post CISERVER,'/job/',JOBNAME,'/build' ⍝ use authentication with credentials in URL
       :If r.rc=0
@@ -292,8 +332,28 @@
         ⍝ # Show the console output
         ⍝ curl ${CISERVER}/job/${JOBNAME}/${JID}/consoleText
      
-          ⎕←'Ready to retrieve the log!'
+        ⍝   ⎕←'Ready to retrieve the log!'
           ns.log←get(⎕JSON r.Data).url,'consoleText'
+     
+          wfurl←(1⊃⎕NPARTS ¯1↓(⎕JSON r.Data).url),'wfapi/'
+          wf←get wfurl
+     
+          ⍝ conga & httpcommand have problems with these requests due to non-standard reply
+          ⍝ from Jenkins
+          r←⎕SE.CITA.v416.HttpCommand.Get wfurl,'runs/',wfCount←⍕wf.runCount
+          :If r.Data≢⍬
+              i←⊃⍒r.Data.startTimeMillis   ⍝ find the last run
+              (i⊃r.Data).(id name status)   ⍝ name of job and status
+              tab←↑(⊂CISERVER(i⊃r.Data).stages){w←⍵ ⋄ w[4]←⊂'<a href="',(1⊃⍺),(4⊃⍵),'">log</a>' ⋄ w
+              }¨(i⊃r.Data).stages.((id name status _links.self.href),⊂{6::'' ⋄ ⍎⍵}'error.message')    ⍝ stages, result & error msg, if available---
+              :If ∨/tab[;3]≢¨⊂'SUCCESS'  ⍝ we had some failures...
+            ⍝ temporarily: write out this list as a way of seeing what went qwrong...
+                  h←'<table>',NL,' <tr><td>id</td><td>name</td><td>status</td><td>url</td><td>msg</td></tr>',NL
+                  tab←h,(∊{' <tr>',⍵,'</tr>',NL}¨↓({'<td>',(⍕⍵),'</td>'}¨tab)),NL,'</table>'
+                  ns.StageTab←tab
+                  ⍝(⊂tab)⎕NPUT ⎕←(∊2↑⎕NPARTS file),'-stages.html'
+              :EndIf
+          :EndIf
           ⍝ h.Command←'get'
           ⍝ con←h.Run
      
@@ -313,7 +373,7 @@
       :EndIf
       :If ''≢1⊃LOCKFILE
       :AndIf ⎕NEXISTS 1⊃LOCKFILE
-          ⎕NDELETE 1⊃LOCKFILE
+          1 ⎕NDELETE 1⊃LOCKFILE
       :EndIf
     ∇
     :endsection
