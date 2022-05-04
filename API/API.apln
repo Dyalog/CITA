@@ -893,9 +893,7 @@
      
      
           info'Generating jobdef'
-          :If ⎕NEXISTS file←'./jobTemplate.xml'
-⍝          :OrIf ⎕NEXISTS file←(1⊃⎕NPARTS 1⊃2 ⎕ATX 1⊃⎕SI),'jobTemplate.xml'
-          :OrIf ⎕NEXISTS file←##.Home,'StartupSession/CITA/jobTemplate.xml'
+          :If ⎕NEXISTS file←##.Home,'/Jenkins/jobTemplate.xml'
               job←1⊃⎕NGET file
               job←('%xinD%'⎕R(2 FixPath xinD)⎕OPT'Regex' 0)job
               STAGES←''

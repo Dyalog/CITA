@@ -5,7 +5,7 @@
 
  R←''
  o←⎕NS'' ⋄ o.overwrite←1
- {}o ⎕SE.Link.Import ⎕this(##.TESTSOURCE,'../../StartupSession/CITA/GitHub.apln')
+ {}o ⎕SE.Link.Import ⎕this(##.TESTSOURCE,'../../API/GitHub.apln')
 
 
  tmpPath←(739⌶0),⊃'"/CITA-Tests/GitHub_"YYYYMMDD"_"hhmmss"/"'(1200⌶)1 ⎕DT⊂⎕TS

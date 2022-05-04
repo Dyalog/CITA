@@ -35,11 +35,11 @@
               ⍝ :If 0=⎕NC'⎕SE.CITA'
           :If 2=##.⎕NC't' ⍝ lets see if we can work out where came from
           :AndIf ⎕NEXISTS ##.t,'.dyalog'   ⍝ lets see if we can work out where came from (this works during List...)
-              Home←((({1⊃⎕NPARTS ¯1↓⍵})⍣3)##.t),'StartupSession/CITA'
+              Home←((({1⊃⎕NPARTS ¯1↓⍵})⍣3)##.t),'API'
             ⍝   ⎕←'Home1=',Home
           :Else
               Home←(1⊃⎕RSI).##.##.List{0::'' ⋄ 7⊃(⍺⍪⊂'')[⍺[;1]⍳⊂⍵;]}'cita'    ⍝ we're called during Run - get location from cached list
-              Home←∊1 ⎕NPARTS(1⊃⎕NPARTS Home),'../../StartupSession/CITA'
+              Home←∊1 ⎕NPARTS(1⊃⎕NPARTS Home),'../../API'
             ⍝   ⎕←'Home2=',Home
           :EndIf
           :If ⎕NEXISTS Home
