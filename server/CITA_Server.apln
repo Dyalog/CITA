@@ -14,6 +14,7 @@
       ⎕←'Loading DCL/Crypt'
       ⎕SE.SALT.Load Home,'../deps/DCL/Crypt.dyalog -target=#'
       #.Crypt.Init Home,'../deps/DCL/'
+      ⎕se.UCMD'CITA.GetAPI'
       r←0
       ⎕←'Ran Run-fn ;)   Home=',Home
       ⎕←'NC=',⍕⎕SE.⎕NC'CITA'

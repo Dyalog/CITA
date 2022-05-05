@@ -9,7 +9,8 @@ services:
     environment:
     - GITHUB_SECRET=ABC123
     - GitHub_API_Token=abc123
-    - COMMANDFOLDER=home/dyalog/MyUCMDs:/opt/mdyalog/18.2/64/unicode/SALT/spice;/app/SALT/spice
+    - DYALOGCITASRCDIR=/app/
+    - COMMANDFOLDER=home/dyalog/MyUCMDs:/opt/mdyalog/18.2/64/unicode/SALT/spice:/app/SALT/spice
     - DYALOG_JARVIS_THREAD=1
     - RIDE_INIT=serve:*:4502
     working_dir: /app
