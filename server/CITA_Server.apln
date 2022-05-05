@@ -12,8 +12,8 @@
           ⎕SE.Dyalog.Callbacks.WSLoaded 1
       :EndIf
       ⎕←'Loading DCL/Crypt'
-      ⎕SE.SALT.Load Home,'../DCL/Crypt.dyalog -target=#'
-      #.Crypt.Init Home,'../DCL/'
+      ⎕SE.SALT.Load Home,'../deps/DCL/Crypt.dyalog -target=#'
+      #.Crypt.Init Home,'../deps/DCL/'
       r←0
       ⎕←'Ran Run-fn ;)   Home=',Home
       ⎕←'NC=',⍕⎕SE.⎕NC'CITA'

@@ -1,5 +1,5 @@
 :namespace API
-    _Version←'0.9.4' '2022-05-02'
+    _Version←'0.9.4' '2022-05-04'
     NL←⎕UCS 13
     ⎕ml←1
     ⎕io←1
@@ -969,10 +969,12 @@
               file←xinO,∊1↓⎕NPARTS file
               (⊂job)⎕NPUT file
               info'Wrote job to ',file
-              jenk←⎕NEW ##.JenkinsConnection
+              jenk←⎕NEW ##.JenkinsConnection('' '' ((1⊃⎕nparts file),'httpcommand.log'))
               jenk.(Debug Cleanup)←1 0
-     
-              :If ~⊃z←jenk.Validate⊃('<script>(.*)</script>'⎕S'\(1)'⍠('Mode' 'M')('DotAll' 1))job
+            ⍝   jenk.HCLogFile←(1⊃⎕nparts file),'httpcommand.log'
+              jf←⊃('<script>(.*)</script>'⎕S'\(1)'⍠('Mode' 'M')('DotAll' 1))job
+              (⊂jf)⎕NPUT(∊2↑⎕NPARTS file),'.jenkinsfile'
+              :If ~⊃z←jenk.Validate jf
                   ⎕←'Could not validate job: ',2⊃z
                   ∘∘∘
               :EndIf

@@ -10,6 +10,7 @@
     :field public Labels←''  ⍝ vtv with labels to use...
     :field public CITA_VERSION←'cita_latest'
     :field public Commandline←''
+    :field public HCLogFile←''  ⍝ log execution of into this file HttpCommand (in post)
 
     :field public load_workspace←''
 
@@ -55,8 +56,26 @@
       Init
     ∇
 
+    ∇ New3(ciserver usr logfile)
+      :Access   public
+      :Implements constructor
+    ⍝ set default
+     CISERVER←env'CISERVER'
+      JENKINS_USERNAME←env'JENKINS_USERNAME'
+      JENKINS_APIKEY←env'JENKINS_APIKEY'
+       
+      :if 0<≢ciserver ⋄CISERVER←ciserver⋄:endif
+      :if 0<≢usr⋄JENKINS_USERNAME←usr⋄:endif
+      :if 0<≢logfile⋄HCLogFile←logfile⋄:endif
+      JENKINS_APIKEY←env'JENKINS_APIKEY'
+      Init
+    ∇
+   
+
     ∇ Init
-      ⎕SE.SALT.Load HomeDir,'HttpCommand -target=#'         ⍝ needs Brians updates from Feb3d, so we need to keep it in the same folder!
+     ⍝FIX:  UGLY!!!!  we should be able to do a simple Load HttpCommand,
+     ⍝ but that requires all installations to have the latest version...
+      ⎕SE.SALT.Load HomeDir,'/../deps/HttpCommand/source/HttpCommand.dyalog -target=#'         ⍝ needs Brians updates from Feb3d, so we need to keep it in the same folder!
       crumb←(get'/crumbIssuer/api/json').crumb
     ∇
 
@@ -80,8 +99,20 @@
           url←CISERVER,url
       :EndIf
       prms←⎕NS''
+
       prms.u←CREDS
+            :If 0<≢HCLogFile   ⍝ log details of this call
+
+          (⊂(HCLogHeader'get'),1#.HttpCommand.Get url prms)⎕NPUT HCLogFile 2
+      :EndIf
+
       res←#.HttpCommand.Get url prms
+      :If 0<≢HCLogFile   ⍝ log details of this call
+          (⊂(HCLogHeader'get response'),1(⎕JSON⍠('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
+      :EndIf
+
+
+
       ⍝ res←#.HttpCommand.Get url prms
 ⍝       res←h.Run
       :If res.rc=0
@@ -129,6 +160,14 @@
     ∇
 
 
+∇ R←HCLogHeader tit;nl
+R←nl←⎕ucs 13
+R,←80⍴'='
+R,←nl,(⍕⎕ts),' ',tit,nl
+R,←80⍴'='
+R,←nl
+∇
+
     ∇ R←{data}post url_addHd;url;addHd;Headers;res;retC;h
     ⍝ ⍺=undefined | data to post | 1 (to return the instance of HttpCommand that was generated & executed)
       retC←0
@@ -137,12 +176,23 @@
       (url addHd)←2↑(⊆url_addHd),⊂''
       url←((1+url⍳'/')↑url),CREDS,'@',(1+url⍳'/')↓url  ⍝ use authentication with credentials in URL
       Headers←1 2⍴'Cookie'cookie
-      Headers⍪←'Jenkins-Crumb'crumb
+      ⍝Headers⍪←'Jenkins-Crumb'crumb
       Headers⍪←'u'CREDS
       :If 0<≢addHd ⋄ Headers⍪←addHd ⋄ :EndIf
+     
       h←⎕NEW #.HttpCommand('post'url data Headers)
      
+      :If 0<≢HCLogFile   ⍝ log details of this call
+          (⊂(HCLogHeader'post'),h.Show)⎕NPUT HCLogFile 2
+      :EndIf
+     
+     
       res←h.Run
+     
+      :If 0<≢HCLogFile   ⍝ log details of this call
+          (⊂(HCLogHeader'response'),1(⎕JSON⍠('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
+      :EndIf
+     
       :If res.rc=0
       :AndIf res.HttpStatus∊200 201
           R←res.(rc Data)
@@ -154,7 +204,7 @@
           :EndIf
      
       :Else
-          (⊂res.Data)⎕NPUT(file,'.err.html')1  ⍝ TODO: this can probably be moved down inside the :Else - otherwise we don't really need that answer anymore...
+          (⊂res.Data)⎕NPUT((∊2↑⎕nparts HCLogFile),'.err.html')1  ⍝ TODO: this can probably be moved down inside the :Else - otherwise we don't really need that answer anymore...
           :If 0=≢err←('<.*>(.*)</.*>'⎕S'\1'⍠'Greedy' 0)¨('id"error-description".*>(.*</div>)'⎕S'\1'⍠'Greedy' 0)res.Data
               err←∊('name="skip2content".*>(.*)</div>'⎕S'\1'⍠'Greedy' 0)res.Data
           :EndIf
@@ -264,6 +314,8 @@
       :If 0<≢CITA_VERSION
           cv←CITA_VERSION
           bin←('%CITA_VERSION%'⎕R cv⍠('Regex' 0))bin
+      :Else
+          bin←('&&%CITA_VERSION%'⎕R''⍠('Regex' 0))bin
       :EndIf
       bin←('%LOCKFILE%'⎕R(2⊃LOCKFILE)⍠('Regex' 0))bin
  ⍝     ⎕←'file=',file
@@ -276,14 +328,14 @@
       res←bin post(url(1 2⍴'Content-Type' 'application/xml'))
       (⊂bin)⎕NPUT(file,'.submitted')1     ⍝ save script as it was submitted
       rdbl←('&quot;' '&apos;' '&amp;' '&lt;' '&gt;'⎕R(,¨'"''&<>')⍠'Regex' 0)bin
-     
       (⊂rdbl)⎕NPUT(file,'.subm.rdbl')1     ⍝ a human-readable form
      
       :If 0≠⊃res
           :If ∨/'A job already exists with the name'⍷2⊃res
           ⍝ see: http://jenkins.dyalog.bramley/view/CITA%20Builds/job/CITA_conga-apl_main/api/
           ⍝ http://jenkins.dyalog.bramley/view/CITA%20Builds/job/CITA_conga-apl_main/config.xml
-              ⎕NDELETE file,'.err.html'   ⍝ no need to keep this error, as we know how to deal with it!
+             1 ⎕NDELETE file,'.err.html'   ⍝ no need to keep this error, as we know how to deal with it!
+              ⎕←')ed bin   ⍝ %CITA_VERSION% in it???'
               url←CISERVER,'/job/',JOBNAME,'/config.xml'
               res←bin post(url(1 2⍴'Content-Type' 'application/xml'))
               :If 0≠⊃res
@@ -340,7 +392,7 @@
      
           ⍝ conga & httpcommand have problems with these requests due to non-standard reply
           ⍝ from Jenkins
-          r←⎕SE.CITA.v416.HttpCommand.Get wfurl,'runs/',wfCount←⍕wf.runCount
+          r←#.HttpCommand.Get wfurl,'runs/',wfCount←⍕wf.runCount
           :If r.Data≢⍬
               i←⊃⍒r.Data.startTimeMillis   ⍝ find the last run
               (i⊃r.Data).(id name status)   ⍝ name of job and status

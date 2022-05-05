@@ -5,7 +5,8 @@ stage ("run test") {
                 agent {
                     docker {
                         label "docker"
-                        image "${DISTRO}"
+                       // image "${DISTRO}"
+                       image "dyalog/dyalog"
                         args '-v %xinD%:/app/'
                         args '-v /devt:/devt'
                     }

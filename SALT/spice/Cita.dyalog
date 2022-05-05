@@ -83,6 +83,7 @@
                   :EndTrap
                   ⎕SE.CITA.DYALOGCITASRCDIR←Home
               :EndIf
+              ⎕SE.SALT.Load Home,'/../deps/HttpCommand/source/HttpCommand.dyalog'
               ⎕SE.CITA.API._InitUCMDs
               :If ureset
                   ⎕SE.SALTUtils.ResetUCMDcache 1  ⍝ avoid calling ]UReset, as that would add another call to List etc...

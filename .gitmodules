@@ -1,6 +1,6 @@
-[submodule "Jarvis"]
-	path = Jarvis
-	url = https://github.com/Dyalog/Jarvis
-[submodule "DCL"]
-	path = DCL
+[submodule "deps/HttpCommand"]
+	path = deps/HttpCommand
+	url = https://github.com/Dyalog/HttpCommand
+[submodule "deps/DCL"]
+	path = deps/DCL
 	url = https://github.com/Dyalog/DCL
