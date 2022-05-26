@@ -21,7 +21,7 @@ stage ("run test") {
                         [ %EDITIONS%].each { EDITION ->
                                 // catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
                                 try {
-                                    sh "/app/install-dyalog %VERSION% %EDITION% %BITS%"
+                                    //sh "/app/install-dyalog %VERSION% %EDITION% %BITS%"
                                     exePath = "/opt/mdyalog/%VERSION%/${BITS}/${EDITION}/mapl"
                                     E = EDITION.take(1)
                                     exists = fileExists(exePath)

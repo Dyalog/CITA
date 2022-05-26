@@ -1,13 +1,12 @@
- lx arg;v;Env;subj;ext;r;z;s;cmd;y;log;wsFullReport;⎕RL;⎕ML;⎕IO;rc;path;NL;CITA_Log;dmx;DEBUG;res;cf;d;Because;Check;Fail;HandleError;IsNotElement;eis
+﻿ lx arg;v;Env;subj;ext;r;z;s;cmd;y;log;wsFullReport;⎕RL;⎕ML;⎕IO;rc;path;NL;CITA_Log;dmx;DEBUG;res;cf;d;Because;Check;Fail;HandleError;IsNotElement;eis
  ⍝ OFF with returncode 42: all is well, 43: error, 44: WS
 ⍝ (0,⍳300)⎕TRACE'lx'  ⍝ trace is buggy - don't use it! (need http://mantis.dyalog.com/view.php?id=19349 to be fixed...)
  Env←{2 ⎕NQ'.' 'GetEnvironment'⍵}  ⍝ get environment variable or cmdline
-:if 0<≢Env'RunCITAlog'⋄ ⎕SE.RunCITA∆OldLog←⎕SE ⎕WG'Log'⋄:endif
+ NL←⎕UCS 13
+ :If 0<≢Env'Executorlog' ⋄ ⎕SE.Executor∆OldLog←⎕SE ⎕WG'Log' ⋄ :EndIf
  DEBUG←{((,'0')≢⍵)∧0<≢⍵:1 ⋄ 0}Env'CITADEBUG'
- :If DEBUG ⋄ ⎕←'TS.Start=',⎕TS ⋄ :EndIf
- :If DEBUG ⋄ ⎕←'PPID=' ⋄ ⎕SH'echo $PPID' ⋄ :EndIf
- :If DEBUG ⋄ ⎕←'CommandlineArgs:' ⋄ :EndIf
- :If DEBUG ⋄ ⎕←2 ⎕NQ'.' 'GetCommandlineArgs' ⋄ :EndIf
+
+ ⎕←'Executor.lx - CommandlineArgs:' ,2 ⎕NQ'.' 'GetCommandlineArgs'
  :If (,'1')≡,2 ⎕NQ'.' 'GetEnvironment' 'WFR'
  :AndIf 14<+/1 0.1×2↑⊃(//)'.'⎕VFI 2⊃'.'⎕WG'APLVersion'   ⍝ RIDE Connections are detected from 14.1 onwards
      ⎕←'Waiting for RIDE'
@@ -25,10 +24,9 @@
         ⍝ disabled, because it causes "Cannot perform operation from within session namespace."
      :EndIf
 
-     :If 0=⎕SE.⎕NC'UCMD'
+     :If 0=⎕SE.⎕NC'UCMD' ⍝ this might seem paranoid, but it happened. We probably don't need this code any longer, but better safe han sorry...
          :If DEBUG ⋄ ⎕←'Loading session' ⋄ :EndIf
          d←Env'DYALOG'
-   ⍝⎕se.File←'/opt/mdyalog/18.0/64/unicode/default.dse'
          ⎕SE.File←d,'/default.dse'
          :If 0≠2 ⎕NQ'⎕se' 'FileRead'
              ⎕←s←'Problem reading session file ',⎕SE.File
@@ -44,7 +42,6 @@
              ⎕SE._cita.Error'⎕SE.UCMD not present - even though we loaded ',⎕SE.File
          :EndIf
      :EndIf
-     :If DEBUG ⋄ ⎕←'COMMANDFOLDER=',Env'COMMANDFOLDER' ⋄ :EndIf
      d←Env'DYALOG'
      :Trap DEBUG↓0
          :If 0=≢cf←Env'COMMANDFOLDER'   ⍝ if no COMMANDFOLDER is specified
@@ -55,33 +52,19 @@
          ⎕←'SALT.Set ',d
          {}⎕SE.SALT.Set d
      :Else
-         ⍎'(⎕JSON⎕OPT''Compact''0) ⎕dmx'
+         (⎕JSON⎕OPT'Compact'0) ⎕dmx
      :EndTrap
-     :If DEBUG ⋄ ⎕←'SALT.set cmddir=',⎕SE.SALT.Set'cmddir' ⋄ :EndIf
-     :If DEBUG ⋄ ⎕←'lx. citaDEVT=',Env'citaDEVT' ⋄ :EndIf
- ⍝ set up ⎕SE._cita
-     NL←⎕UCS 13
-     :If 'on'≡⎕SE.SALTUtils.lCase Env'UDEBUG'
-     :OrIf DEBUG
-         ⎕SE.UCMD'UDEBUG ON'
-     :Else
-         ⎕SE.UCMD'UDEBUG OFF'
-     :EndIf
-     :If DEBUG ⋄ ⎕←'UDEBUG=',(1+⎕SE.SALTUtils.DEBUG)⊃'OFF' 'ON' ⋄ :EndIf
-     :If DEBUG ⋄ ⎕←'Setting OUTPUT.Find' ⋄ :EndIf
      :Trap 0   ⍝ might not be present on older versions...
-        ⍝  :If DEBUG ⋄
-         ⎕←⎕SE.UCMD'output.find on -includequadoutput -timestamp' ⋄
-        ⍝   :EndIf
+         {}⎕SE.UCMD'output.find on -includequadoutput -timestamp' 
      :Else
          ⎕←↑⎕DM
-         ⍎'(⎕json⎕OPT''Compact''0) ⎕dmx'
+         (⎕json⎕OPT'Compact'0) ⎕dmx
      :EndTrap
      :Trap 0
-         ⎕SE.UCMD'GetTools4CITA ',⍕⎕THIS
+         {}⎕SE.UCMD'GetTools4CITA ',⍕⎕THIS
      :Else
          ⎕←↑⎕DM
-         ⍎'(⎕json⎕OPT''Compact''0) ⎕dmx'
+         (⎕json⎕OPT'Compact'0) ⎕dmx
      :EndTrap
      1 ⎕SE._cita.RecordMemStats'Start of tests'
      ⎕ML←1
@@ -106,35 +89,27 @@
          en=1:s ⎕SE._cita._LogStatus'wsfull' 44
          ⎕SE._cita.Error s
      }
-     :If DEBUG ⋄ ⎕←'Deleting log-files...' ⋄ :EndIf
-     1(⎕NDELETE ⎕OPT'Wildcard' 1)⎕←(∊2↑⎕NPARTS CITA_Log),'.*'
+     1(⎕NDELETE)⎕←(∊2↑⎕NPARTS CITA_Log),'.log'
+     1(⎕NDELETE)⎕←(∊2↑⎕NPARTS CITA_Log),'.log.json'
 
-
-
-     ⍝TODO: remove comment! | wsFullReport←(500⍴⊂'PlaceHolder'),[1.5]1000000     ⍝ reserve a few bytes for our wsfullreport - just in case...
-
-
+     wsFullReport←(500⍴⊂'PlaceHolder'),[1.5]1000000     ⍝ reserve a few bytes for our wsfullreport - just in case...
 
 ⍝ run the code
      :If 0<⎕SE._cita.tally subj←Env'CITATest'   ⍝ get test subject
          1 ⎕SE._cita.RecordMemStats'Start of CITATest'
          ext←3⊃⎕NPARTS subj
          :If CITA_Log≡'.log'
-             :If ~0∊⍴t←Env'RunCITAlog' ⋄ CITA_Log←t
+             :If ~0∊⍴t←Env'Executorlog' ⋄ CITA_Log←t
              :Else ⋄ CITA_Log←∊2↑⎕NPARTS subj
              :EndIf
          :EndIf
-         :If DEBUG ⋄ ⎕←'ext=',ext ⋄ :EndIf
-         :If DEBUG ⋄ ⎕←'mode=',Env'mode' ⋄ :EndIf
          :Select ext
          :CaseList '' '.dyalogtest',('DTest'≡Env'mode')/⊂ext
              :Trap DEBUG↓0
-                 cmd←'DTest "',subj,'" -testlog="',(Env'testlog'),'" ',(Env'dtestmods '){⍺,(~∨/'-off'⍷⍺)/⍵}' -off=2'
-                 :If DEBUG ⋄ ⎕←'cmd=',cmd ⋄ :EndIf
+                 cmd←'DTest "',subj,'" -testlog="',(Env'testlog'),'" ',(Env'dtestmods'){⍺,(~∨/'-off'⍷⍺)/⍵}' -off=2'
                  ⎕SE.UCMD cmd
                  ⎕←2 ⎕SE._cita.RecordMemStats'End of CITATest'
 
-                 :If DEBUG ⋄ ⎕←'subj=',subj ⋄ :EndIf
                  :If ⎕NEXISTS s←(∊2↑⎕NPARTS subj),'.log'
                      ⎕SE._cita.Failure 1⊃⎕NGET s
                  :EndIf
@@ -224,14 +199,14 @@ End:
                  ⎕←']TheUCMDres←',subj
              :EndIf
              TheUCMDres←⎕SE.UCMD subj
-             :If DEBUG ⋄ ⎕←'TheUCMDres=',TheUCMDres ⋄ :EndIf
+             :If DEBUG ⋄ ⎕←'TheUCMDres=',,TheUCMDres ⋄ :EndIf
          :Else
              subj HandleError ⎕←'Error executing UCMD',NL,∊⎕DM,¨⊂NL
          :EndTrap
-         ⎕←∊(2 ⎕SE._cita.RecordMemStats'End'),¨⊂NL
+         {}2 ⎕SE._cita.RecordMemStats'End'
          :If DEBUG ⋄ ⎕←'The last commands...' ⋄ :EndIf
          :Trap DEBUG↓0
-                 ({1=≡⍵:⍵ ⋄ ∊(⍕⍵),⊂NL}TheUCMDres)⎕SE._cita._LogStatus'RunUCMD.log' ¯42   ⍝ leave behind a .UCMD file to indicate it was executed (and to show the result it returned)
+             ({(1=≡⍵)∧1=⍴⍴⍵:⍵ ⋄ ∊(⍕⍵),⊂NL}TheUCMDres)⎕SE._cita._LogStatus'RunUCMD.log' ¯42   ⍝ leave behind a .UCMD file to indicate it was executed (and to show the result it returned)
              :If (,'1')≡,Env'CITAnqOFF'
                  {sink←2 ⎕NQ ⎕SE'keypress'⍵}¨'  )OFF ',⊂'ER'  ⍝ as long as 18008 isn't fixed (and for all older versions) we can't use ⎕OFF but have to ⎕NQ'KeyPress'
                  →0
@@ -244,7 +219,7 @@ End:
                  ⎕SE._cita.Failure''
              :EndIf
          :Else
-             ⎕←⍎'(⎕json',(⍎(1+82=⎕DR' ')⊃'⎕ucs 9056' '''⎕OPT'''),'''Compact''0)⎕dmx'
+             ⎕←(⎕json⎕OPT'Compact'0)⎕dmx
          :EndTrap
      :ElseIf 0<⎕SE._cita.tally subj←Env'ExecCommand'
          {sink←2 ⎕NQ ⎕SE'KeyPress'⍵}¨subj,⊂'ER'
@@ -256,6 +231,6 @@ End:
      :EndIf
 
  :Else
-     ⎕←⍎'(⎕json',(⍎(1+82=⎕DR' ')⊃'⎕ucs 9056' '''⎕OPT'''),'''Compact''0)⎕dmx'
+     ⎕←(⎕json⎕OPT'Compact'0)⎕dmx
    ⍝  ⎕OFF
  :EndTrap

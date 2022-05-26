@@ -623,7 +623,7 @@
                 ⍝   ⎕←⎕JSON nsTest
                   :If 2=nsTest.⎕NC'outfile'
                     ⍝   ⎕←(≢xinO)↓nsTest.outfile
-                      resNS.outfile←(≢xinO)↓nsTest.outfile
+                      resNS.outfile←nsTest.outfile
                   :EndIf
               :EndIf
           :EndFor
@@ -657,7 +657,7 @@
       :EndIf
     ∇
 
-    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;nlf;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt;versions;platforms;tests;jns;BIT;sdirD
+    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt;versions;platforms;tests;jns;BIT;sdirD
 ⍝:: Test a remote GitHub-repository
 ⍝?: Test a remote GitHub-repository
 ⍝?:
@@ -767,6 +767,7 @@
               →Exit
           :EndIf
       :EndIf
+      ⎕←'arg 1 2=',arg.(_1 _2)
 ⍝ TODO: get CITA from web (or locally, that needs to be added above 721) and is used below (search SendMail)
      
 ⍝ create tempdir for stuff downloaded from repo
@@ -777,7 +778,7 @@
         ⍝   →0
           home←##.Home
           EnableRIDE←0   ⍝ do we want to RIDE into the CITA job?
-          arg.platforms←','(≠⊆⊢)arg.platforms
+          arg.platforms←','(≠⊆⊢){⍵≡0:'' ⋄ ⍵}arg.platforms
 ⍝TODO: add these to parse & doc. also add versions!
 ⍝arg.editions←{⍵=⍥⎕c'u': 'unicode' ⋄ ⍵=⍥⎕c'c': 'classic' ⋄ ⍵}¨','    (≠⊆⊢)arg.editions
 ⍝arg.bits←{' '=⍥⎕dr ⍵:2⊃⎕vfi ⍵ ⋄ ⍵}','(≠⊆⊢)arg.bits
@@ -844,8 +845,8 @@
           :Else
           ⍝ get these from a local git folder (so we won't need to commit anything that we want to test to Git
               ⍝_CopyFolder'Collect'
-              info'CopyFolder CITA' ⋄ (xinO,'CITA/')_CopyFolder res,'CITA/'
-              info'CopyFolder ',repo ⋄ (xinO,repo,'/')_CopyFolder res,repo,'/'
+              info'CopyFolder ',res,'CITA → xinO' ⋄ (xinO,'CITA/')_CopyFolder res,'CITA/'
+              info'CopyFolder ',res,repo ⋄ (xinO,repo,'/')_CopyFolder res,repo,'/'
               info'Copy DyalogBuild.dyalog' ⋄ (xinO,'CITA/SALT/spice/DyalogBuild.dyalog')⎕NCOPY res,'DBuildTest/DyalogBuild.dyalog'
               rc1←,0
           :EndIf
@@ -878,9 +879,9 @@
           cfg.Settings.DYALOGCITASRCDIR←1 FixPath xinD,'CITA'
           cfg.Settings.DEFAULT_PW←400
      
-          (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/RunCITA.dws')
+          (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/Executor.dws')
           cmdlinePre←''
-          cmdline←2 FixPath xinD,'CITA/client/RunCITA'    ⍝ .dws' don't specify extension to avoid failure if DWS
+          cmdline←2 FixPath xinD,'CITA/client/Executor'    ⍝ .dws' don't specify extension to avoid failure if DWS
      
           :If EnableRIDE
               cfg.Settings.RIDE_INIT←'HTTP:*:4505'
@@ -899,7 +900,7 @@
               STAGES←''
               LOGFILES←⍬
      
-              :For platform :In arg.platforms∩dyalogversions.platforms{6::⍺ ⋄ ⍺∩⍥⎕C(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
+              :For platform :In arg.platforms{0=≢⍺:⍵ ⋄ ⍺∩⍵}dyalogversions.platforms{6::⍺ ⋄ ⍺∩⍥⎕C(⊃⍤1)⍎⍵}'cfgt.platforms'  ⍝  'mac' 'pi'  ⍝ 'win' 'linux' ⍝ TODO: maybe CITA.json5 should specify the platforms?
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    script{'
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {' '      script{'
 ⍝ Platform win has label"Windows" with Jenkins
@@ -927,7 +928,7 @@
      
                   file_s←(∊2↑⎕NPARTS file),'-stages-',platform,'.groovy'  ⍝ the stage-file for that platform
                   :If ⎕NEXISTS file_s
-                      (ThisStage nlf)←(⎕NGET file_s 1)[1 3]
+                      ThisStage←1⊃⎕NGET file_s 1
                       :For version :In fapl
                           :For BIT :In BITS
                               :For EDITION :In ⊆EDITIONS
@@ -965,11 +966,11 @@
               :EndFor
               p1←⍸∊'%STAGES%'⍷job  ⍝ search string that we will replace with content of var "stages"
               lb←¯1+p1-⌈/⍸((⎕UCS job)∊10 13)∧(⍳≢job)<p1  ⍝ leading blanks of lines (so that we can maintain indent)
-              job←((p1-lb)↑job),(∊(⊂lb⍴' '),¨STAGES,¨⊂⎕UCS nlf),{(+/∧\⍵∊⎕UCS 10 13)↓⍵}(p1{⊃(⍵>⍺)/⍵}⍸(⎕UCS job)∊10 13)↓job
+              job←((p1-lb)↑job),(∊(⊂lb⍴' '),¨STAGES,¨NL),{(+/∧\⍵∊⎕UCS 10 13)↓⍵}(p1{⊃(⍵>⍺)/⍵}⍸(⎕UCS job)∊10 13)↓job
               file←xinO,∊1↓⎕NPARTS file
               (⊂job)⎕NPUT file
               info'Wrote job to ',file
-              jenk←⎕NEW ##.JenkinsConnection('' '' ((1⊃⎕nparts file),'httpcommand.log'))
+              jenk←⎕NEW ##.JenkinsConnection('' ''((1⊃⎕NPARTS file),'httpcommand.log'))
               jenk.(Debug Cleanup)←1 0
             ⍝   jenk.HCLogFile←(1⊃⎕nparts file),'httpcommand.log'
               jf←⊃('<script>(.*)</script>'⎕S'\(1)'⍠('Mode' 'M')('DotAll' 1))job
@@ -1100,6 +1101,8 @@
      
      
               html,←'  <br>RunTime: %ms',NL
+              ds←⌊0.5+(+/⊃2(⎕NINFO⍠('Wildcard' 1)('Recurse' 1))xinO,'*')÷1024*2
+              html,←'  <br>Artifacts of tests use approx ',(1⍕ds),'MB of diskspace',NL
               html,←' </body>',NL
               html←html,'</html>',NL
               (⊂html)⎕NPUT xinO,'CITA.log.html'
@@ -1246,6 +1249,7 @@
      
     ⍝ step of Statusfiles to indicate APL Errors [1], failure [2] or success[3]
       StatusFiles←(⊂xin,'CITA.',⎕C step),¨'.err' '.fail' '.ok'
+      ⎕←'StatusFiles=',StatusFiles
       1 ⎕NDELETE¨StatusFiles  ⍝ make sure there are no old statusfiles around...
      
       cfg,←' CITA_Log="',(∊2↑⎕NPARTS 1⊃StatusFiles),'"'
@@ -1269,7 +1273,7 @@
         ⍝   TestLog←xin,'CITA_',(2⊃⎕NPARTS(-(ext≡''))↓Fullname),'.log'
         ⍝   cmd←'CITATest="',Fullname,'" testlog="',TestLog,'"'
           cmd←'CITATest="',Fullname,'"'
-          dws←∊1 ⎕NPARTS ##.Home,'/client/RunCITA'
+          dws←∊1 ⎕NPARTS ##.Home,'/client/Executor'
       :Case '.dws' ⋄ dws←Fullname
       :CaseList '' '.dyalogtest'
           R←4('.dyalogtest or folder-argument only valid for "test", not "',step,'"') ⋄ →(step≢'test')/EndJob
@@ -1277,13 +1281,11 @@
         ⍝   TestLog←xin,'CITA_',(2⊃⎕NPARTS(-(ext≡''))↓Fullname),'.log'
         ⍝   cmd←'CITATest="',Fullname,'"  testlog="',TestLog,'" ',specs{6::'' ⋄ 'dtestmods="',(⍺⍎⍵),'"'}'dtestmodifiers'
           cmd←'CITATest="',Fullname,'" ',specs{6::'' ⋄ 'dtestmods="',(⍺⍎⍵),'"'}'dtestmodifiers'
-          dws←'"',∊1 ⎕NPARTS ##.Home,'/client/RunCITA"'
+          dws←'"',∊1 ⎕NPARTS ##.Home,'/client/Executor"'
           isDTest←1
       :Else
           ns.(R log)←4('Did not recognize type of file "',file,'"') ⋄ →EndJob
       :EndSelect
-      :If ⎕SE.SALTUtils.DEBUG
-      :EndIf
       outfile←xin,'output.txt'
       ns.outfile←outfile
       cmd,←' ',cfg
@@ -1300,9 +1302,9 @@
       :Select GhostRiderFlag
       :CaseList 0 1
           :If GhostRiderFlag=1
-              cmd,←' WFR=1' ⍝ WFR=WaitForRide → if RunCITA sees this, it will wait until GhostRider has connected
+              cmd,←' WFR=1' ⍝ WFR=WaitForRide → if Executor sees this, it will wait until GhostRider has connected
           :EndIf
-          port←55455
+          port←4504
          ⍝ :If DEBUG ⋄
         ⍝   ⎕←(1⊃⎕SI),'[',(⍕1⊃⎕LC),'] Creating new APLProcess. dws=',dws,', cmd=',cmd,', outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port),' | outfile = ',outfile
         ⍝  :EndIf
@@ -1376,6 +1378,7 @@
           ⎕←'fpat=',(∊2↑⎕NPARTS 1⊃StatusFiles),'.*'
           ⎕←'ninfo=',⊃0(⎕NINFO ⎕OPT'Wildcard' 1)(∊2↑⎕NPARTS 1⊃StatusFiles),'.*'
       :EndIf
+ns.info←{(⍵,': ',(1+⎕nexists ⍵)⊃'missing' 'exists'),⎕ucs 13}¨StatusFiles
       :If ⎕NEXISTS aplcore
           ns.log←'Test led to an APLCORE: ',aplcore
           ns.R←6
@@ -1546,7 +1549,6 @@
     _findLine←{{(+/∧\⍵=' ')↓⍵}¨l↓¨(((l←2+≢⍵)↑¨⍺)≡¨⊂'⍝',⍵,':')/⍺}
 
     ∇ Log←_AddLegend resTab;legend;summary
-      Log←'' 'Explanation of status indicator(s):'
       legend←''
       summary←∊1 1↓resTab
       Log←''('Explanation of status indicator',((1<≢∪summary)/'s'),':')
@@ -1563,13 +1565,13 @@
       url←'https://img.shields.io/badge/status-'
       s←⍬ 0
       s[1]←+/∊res=ResultSymbols[1;1]
-      s[2]←+/∊res≠ResultSymbols[1;1]
+      s[2]←+/∊(res≠ResultSymbols[1;1])∧0<≢¨res~¨' '
       url,←(s[1]>0)/(⍕1⊃s),'%20test',((1<s[1])/'s'),'%20ok',(s[2]>0)/',%20'
       url,←(s[2]>0)/(⍕2⊃s),(((0=s[1])∧0<s[2])/'%20test',(1<s[2])/'s'),'%20failed'
       url,←'-',{∧/⍵:'orange' ⋄ ⍵[1]:'green' ⋄ 'red'}s>0
       ⍝ add the dyalog-logo:  (using a hack as seen on https://github.com/badges/shields/issues/3638#issuecomment-508241508 )
       url,←'?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MTYgNTEyIj48cGF0aCBkPSJNMCAzMnYxMTkuMmg2NFY5NmgxMDcuMkMyODQuNiA5NiAzNTIgMTc2LjIgMzUyIDI1NS45IDM1MiAzMzIgMjkzLjQgNDE2IDE3MS4yIDQxNkgwdjY0aDE3MS4yQzMzMS45IDQ4MCA0MTYgMzY3LjMgNDE2IDI1NS45YzAtNTguNy0yMi4xLTExMy40LTYyLjMtMTU0LjNDMzA4LjkgNTYgMjQ1LjcgMzIgMTcxLjIgMzJIMHoiLz48L3N2Zz4='
-      res←##.HttpCommand.Get url
+      res←#.HttpCommand.Get url
       :If res.rc=0
           svg←res.Data
           lbl←('aria-label=".*:\h(.*)"'⎕S'\1'⎕OPT'Greedy' 0)svg

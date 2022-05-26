@@ -230,7 +230,11 @@
           {}MyDRC.SetProp'' 'EventMode' 1
       :EndIf
       :If APLProcess≡⎕NULL
+      :if ⎕nexists SRCDIR,'APLProcess.dyalog'
           APLProcess←⎕SE.SALT.Load SRCDIR,'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
+          :else 
+          APLProcess←⎕SE.SALT.Load 'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
+          :endif
       :EndIf
     ∇
 

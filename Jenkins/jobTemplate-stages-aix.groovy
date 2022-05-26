@@ -7,7 +7,7 @@ stage ("aix_%CITA_VERSION%_%VERSION%") {
           try {
             echo "NODE_NAME = ${env.NODE_NAME}"            
             exePath = "/opt/mdyalog/%VERSION%/${BITS}/${EDITION}/${P}/mapl"
-            exists = fileExists(exePath)          
+            exists = fileExists(exePath)
             if (!exists) {
               error "Found no interpreter for ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
             }
@@ -20,9 +20,9 @@ stage ("aix_%CITA_VERSION%_%VERSION%") {
               cmdlinePre = "APLT1=utf8 APLT2=utf8 APLK0=utf8 "
             }
             E = EDITION.take(1)
-            testPath="%xinD%aix_%VERSION%${P}${E}${BITS}/"
+            testPath="%xinD%aix-${P}_%VERSION%${E}${BITS}/"
             //cmdline = "%CMDLINE% citaDEVT=${citaDEVT} USERCONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
-            cmdline = "%CMDLINE% citaDEVT=${citaDEVT} USERCONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log CITADEBUG=1"
+            cmdline = "%CMDLINE% CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log citaDEVT=${citaDEVT}"
             cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
 
             echo "Launching $cmdlinePre $exePath $cmdline "

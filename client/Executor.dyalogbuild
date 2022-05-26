@@ -1,0 +1,11 @@
+DYALOG BUILD:1
+ID: Executor, Version=1
+
+APL: ./WS/*.dyalog,Target=#
+
+LX: lx 0
+
+DEFAULTS: ⎕ML←⎕IO←1
+
+TARGET: ./Executor,save=1
+TARGET: ../../DBuildTest/Tests/Executor,save=1

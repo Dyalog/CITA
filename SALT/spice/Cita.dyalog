@@ -1,4 +1,4 @@
-﻿:Namespace Cita
+:Namespace Cita
    ⍝ UCMDs for CITA.
    ⍝ The individual commands and their syntax are API-Fns,
    ⍝ whose comments describe syntax and provide documentation.
@@ -72,7 +72,7 @@
                   :Trap 0              ⍝ use ]LOAD instead
                       'CITA'⎕SE.⎕NS''
                       ⎕SE.CITA{
-                          '*'∊⍵:(⊂⍺)∇¨⊃0(⎕NINFO⍠'Wildcard' 1)⍵
+                          '*'∊⍵:(⊂⍺)∇¨⊃0(⎕NINFO⎕OPT'Wildcard' 1)⍵
                           1=⊃1 ⎕NINFO ⍵:(((⍕⍺),'.',2⊃⎕NPARTS ⍵)⎕NS'')∇ ⍵,'/*'  ⍝ recursively load subdirs into new ns
                           (2=⊃1 ⎕NINFO ⍵)∧(⎕NPARTS ⍵)[3]∊'.aplf.' '.dyalog' '.aplc' '.apln':⎕SE.SALT.Load ⍵,' -target=',(⍕⍺),(0<≢t←2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITA_APIDEV')/' -nolink'
                       }Home,'/*'
@@ -84,6 +84,12 @@
                   ⎕SE.CITA.DYALOGCITASRCDIR←Home
               :EndIf
               ⎕SE.SALT.Load Home,'/../deps/HttpCommand/source/HttpCommand.dyalog'
+              :if 0<≢2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITA_APIDEV' ⍝ temporaily to use bjorns latest DLLs
+              HttpCommand.CongaPath←'/git/CITA/'
+              :endif
+              :if 0=⎕SE.CITA.⎕nc'APLProcess'  ⍝ it probably no longer exists in the API folder, so we use what we got with the interpreter...
+              ⎕se.SALT.Load'APLProcess -target=⎕SE.CITA'
+              :endif
               ⎕SE.CITA.API._InitUCMDs
               :If ureset
                   ⎕SE.SALTUtils.ResetUCMDcache 1  ⍝ avoid calling ]UReset, as that would add another call to List etc...

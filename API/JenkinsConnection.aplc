@@ -14,7 +14,7 @@
 
     :field public load_workspace←''
 
-    :field private cookie
+    :field private cookie←''
     :field private NL←⎕ucs 13
 
 
@@ -60,22 +60,27 @@
       :Access   public
       :Implements constructor
     ⍝ set default
-     CISERVER←env'CISERVER'
+      CISERVER←env'CISERVER'
       JENKINS_USERNAME←env'JENKINS_USERNAME'
       JENKINS_APIKEY←env'JENKINS_APIKEY'
-       
-      :if 0<≢ciserver ⋄CISERVER←ciserver⋄:endif
-      :if 0<≢usr⋄JENKINS_USERNAME←usr⋄:endif
-      :if 0<≢logfile⋄HCLogFile←logfile⋄:endif
+     
+      :If 0<≢ciserver ⋄ CISERVER←ciserver ⋄ :EndIf
+      :If 0<≢usr ⋄ JENKINS_USERNAME←usr ⋄ :EndIf
+      :If 0<≢logfile ⋄ HCLogFile←logfile ⋄ :EndIf
       JENKINS_APIKEY←env'JENKINS_APIKEY'
       Init
     ∇
-   
+
 
     ∇ Init
      ⍝FIX:  UGLY!!!!  we should be able to do a simple Load HttpCommand,
      ⍝ but that requires all installations to have the latest version...
       ⎕SE.SALT.Load HomeDir,'/../deps/HttpCommand/source/HttpCommand.dyalog -target=#'         ⍝ needs Brians updates from Feb3d, so we need to keep it in the same folder!
+⍝ temporary, while testing new conga from BHC
+'Conga'#.⎕cy'Conga'
+#.HttpCommand.CongaPath←'c:/git/CITA/'
+#.Conga.DllVer←'35'
+⍝ end temporary...
       crumb←(get'/crumbIssuer/api/json').crumb
     ∇
 
@@ -99,20 +104,19 @@
           url←CISERVER,url
       :EndIf
       prms←⎕NS''
-
+     
       prms.u←CREDS
-            :If 0<≢HCLogFile   ⍝ log details of this call
-
-          (⊂(HCLogHeader'get'),1#.HttpCommand.Get url prms)⎕NPUT HCLogFile 2
+      :If 0<≢HCLogFile   ⍝ log details of this call
+     
+          (⊂(HCLogHeader'get'),1 #.HttpCommand.Get url prms('Accept-Encoding' 'gzip'))⎕NPUT HCLogFile 2
       :EndIf
-
-      res←#.HttpCommand.Get url prms
+      res←#.HttpCommand.Get url prms('Accept-Encoding' 'gzip')
       :If 0<≢HCLogFile   ⍝ log details of this call
           (⊂(HCLogHeader'get response'),1(⎕JSON⍠('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
       :EndIf
-
-
-
+     
+     
+     
       ⍝ res←#.HttpCommand.Get url prms
 ⍝       res←h.Run
       :If res.rc=0
@@ -160,13 +164,13 @@
     ∇
 
 
-∇ R←HCLogHeader tit;nl
-R←nl←⎕ucs 13
-R,←80⍴'='
-R,←nl,(⍕⎕ts),' ',tit,nl
-R,←80⍴'='
-R,←nl
-∇
+    ∇ R←HCLogHeader tit;nl
+      R←nl←⎕UCS 13
+      R,←80⍴'='
+      R,←nl,(⍕⎕TS),' ',tit,nl
+      R,←80⍴'='
+      R,←nl
+    ∇
 
     ∇ R←{data}post url_addHd;url;addHd;Headers;res;retC;h
     ⍝ ⍺=undefined | data to post | 1 (to return the instance of HttpCommand that was generated & executed)
@@ -175,8 +179,13 @@ R,←nl
       :If data≡1 ⋄ retC←data ⋄ data←'' ⋄ :EndIf
       (url addHd)←2↑(⊆url_addHd),⊂''
       url←((1+url⍳'/')↑url),CREDS,'@',(1+url⍳'/')↓url  ⍝ use authentication with credentials in URL
-      Headers←1 2⍴'Cookie'cookie
-      ⍝Headers⍪←'Jenkins-Crumb'crumb
+      Headers←0 2⍴⊂''
+      :If 0<≢cookie
+          Headers⍪←'Cookie'cookie
+      :EndIf
+      :If 0<≢crumb
+          Headers⍪←'Jenkins-Crumb'crumb
+      :EndIf
       Headers⍪←'u'CREDS
       :If 0<≢addHd ⋄ Headers⍪←addHd ⋄ :EndIf
      
@@ -193,7 +202,7 @@ R,←nl
           (⊂(HCLogHeader'response'),1(⎕JSON⍠('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
       :EndIf
      
-      :If res.rc=0
+      :If res.rc∊0 1119  ⍝ retcode 1119 also ok (if HttpStatus is ok)
       :AndIf res.HttpStatus∊200 201
           R←res.(rc Data)
         ⍝   ⎕←'─── Called ',url,' and got this'
@@ -204,7 +213,7 @@ R,←nl
           :EndIf
      
       :Else
-          (⊂res.Data)⎕NPUT((∊2↑⎕nparts HCLogFile),'.err.html')1  ⍝ TODO: this can probably be moved down inside the :Else - otherwise we don't really need that answer anymore...
+          (⊂res.Data)⎕NPUT((∊2↑⎕NPARTS HCLogFile),'.err.html')1  ⍝ TODO: this can probably be moved down inside the :Else - otherwise we don't really need that answer anymore...
           :If 0=≢err←('<.*>(.*)</.*>'⎕S'\1'⍠'Greedy' 0)¨('id"error-description".*>(.*</div>)'⎕S'\1'⍠'Greedy' 0)res.Data
               err←∊('name="skip2content".*>(.*)</div>'⎕S'\1'⍠'Greedy' 0)res.Data
           :EndIf
@@ -238,13 +247,7 @@ R,←nl
           ⎕←'msg=',msg
           ∘∘∘
       :EndIf
-      :If ~bool←∨/'Jenkinsfile successfully validated'⍷msg
-          ⎕←'Syntax check returned...'
-          ⎕←'msg=',msg
-          ∘∘∘
-      :EndIf
-     
-     
+      bool←∨/'Jenkinsfile successfully validated'⍷msg
     ∇
 
     ∇ ns←file RunJob jobname;h;con;⎕TRAP;r;bin;url;res;sink;cv;binPre;binPost;rdbl;ns;rc
@@ -309,7 +312,6 @@ R,←nl
       :EndIf
      
      
-⍝      (⊂bin)⎕NPUT(file,'.submitteded')1
       cv←''
       :If 0<≢CITA_VERSION
           cv←CITA_VERSION
@@ -327,18 +329,19 @@ R,←nl
       bin←binPre,bin,binPost
       res←bin post(url(1 2⍴'Content-Type' 'application/xml'))
       (⊂bin)⎕NPUT(file,'.submitted')1     ⍝ save script as it was submitted
-      rdbl←('&quot;' '&apos;' '&amp;' '&lt;' '&gt;'⎕R(,¨'"''&<>')⍠'Regex' 0)bin
-      (⊂rdbl)⎕NPUT(file,'.subm.rdbl')1     ⍝ a human-readable form
+    ⍝   rdbl←('&quot;' '&apos;' '&amp;' '&lt;' '&gt;'⎕R(,¨'"''&<>')⍠'Regex' 0)bin
+    ⍝   (⊂rdbl)⎕NPUT(file,'.subm.rdbl')1     ⍝ a human-readable form
      
       :If 0≠⊃res
           :If ∨/'A job already exists with the name'⍷2⊃res
           ⍝ see: http://jenkins.dyalog.bramley/view/CITA%20Builds/job/CITA_conga-apl_main/api/
           ⍝ http://jenkins.dyalog.bramley/view/CITA%20Builds/job/CITA_conga-apl_main/config.xml
-             1 ⎕NDELETE file,'.err.html'   ⍝ no need to keep this error, as we know how to deal with it!
-              ⎕←')ed bin   ⍝ %CITA_VERSION% in it???'
+              1 ⎕NDELETE file,'.err.html'   ⍝ no need to keep this error, as we know how to deal with it!
               url←CISERVER,'/job/',JOBNAME,'/config.xml'
+      ⍝============================= POSTING TO config.xml ====================================
               res←bin post(url(1 2⍴'Content-Type' 'application/xml'))
-              :If 0≠⊃res
+      ⍝=========================================================================================
+              :If ~(⊃res)∊0 1119
                   ∘∘∘
               :EndIf
           :ElseIf debug
@@ -353,7 +356,7 @@ R,←nl
     ⍝ curl -s -XPOST "${CISERVER}/job/${JOBNAME}/build" -H "$CRUMB" -u $CREDS
      
       :If debug ⋄ ⎕←'Running job' ⋄ :EndIf
-      (r h)←1 post CISERVER,'/job/',JOBNAME,'/build' ⍝ use authentication with credentials in URL
+      (r h)←1 post CISERVER,'/job/',JOBNAME,'/build' ⍝ build it... 
       :If r.rc=0
       :AndIf r.HttpStatus∊200 201
 ⍝ Jenkins takes a moment to start the job, the lastBuild will return a 404 until the FIRST job is running or has completed
@@ -377,7 +380,7 @@ R,←nl
           :Repeat
               r←h.Run
           :Until (⎕JSON r.Data).building≢⊂'true'   ⍝ end if no ⎕JSON result
-          :OrIf ~r.rc∊0 1119
+⍝          :OrIf r.rc=0  ⍝TODO: remove
           ⍝ 1119: ERR_CLOSED: Socket closed whilst receiving data → Continue (try again)
           ns.Data←⎕JSON r.Data
      
@@ -394,14 +397,17 @@ R,←nl
           ⍝ from Jenkins
           r←#.HttpCommand.Get wfurl,'runs/',wfCount←⍕wf.runCount
           :If r.Data≢⍬
+              :Trap 0
+                  r.Data←⎕JSON r.Data
+              :EndTrap
               i←⊃⍒r.Data.startTimeMillis   ⍝ find the last run
               (i⊃r.Data).(id name status)   ⍝ name of job and status
               tab←↑(⊂CISERVER(i⊃r.Data).stages){w←⍵ ⋄ w[4]←⊂'<a href="',(1⊃⍺),(4⊃⍵),'">log</a>' ⋄ w
               }¨(i⊃r.Data).stages.((id name status _links.self.href),⊂{6::'' ⋄ ⍎⍵}'error.message')    ⍝ stages, result & error msg, if available---
-              :If ∨/tab[;3]≢¨⊂'SUCCESS'  ⍝ we had some failures...
+              :If ∨/z←tab[;3]≢¨⊂'SUCCESS'  ⍝ we had some failures...
             ⍝ temporarily: write out this list as a way of seeing what went qwrong...
                   h←'<table>',NL,' <tr><td>id</td><td>name</td><td>status</td><td>url</td><td>msg</td></tr>',NL
-                  tab←h,(∊{' <tr>',⍵,'</tr>',NL}¨↓({'<td>',(⍕⍵),'</td>'}¨tab)),NL,'</table>'
+                  tab←h,(∊{' <tr>',⍵,'</tr>',NL}¨↓({'<td>',(⍕⍵),'</td>'}¨z⌿tab)),NL,'</table>'
                   ns.StageTab←tab
                   ⍝(⊂tab)⎕NPUT ⎕←(∊2↑⎕NPARTS file),'-stages.html'
               :EndIf

@@ -1,10 +1,10 @@
-R←_getHomeDir
+ R←_getHomeDir
 
  :If ''≡R←⎕SE.Dyalog.Utils.Config'DYALOGCITASRCDIR'
- :andif ''≡R←{0::'' ⋄ ⍎⍵}'DYALOGCITASRCDIR'
+ :AndIf ''≡R←{0::'' ⋄ ⍎⍵}'DYALOGCITASRCDIR'
  :AndIf ''≡R←{0::'' ⋄ ⍎'⎕SRCDIR'}⍬
- :AndIf ''≡R←{0::'' ⋄ 1⊃⎕nparts⍎'⎕SE.CITA.API.SALT_Data'}⍬
+ :AndIf ''≡R←{0::'' ⋄ 1⊃⎕NPARTS⍎'⎕SE.CITA.API.SALT_Data'}⍬
      'DOMAIN ERROR: must set environment or config variable "DYALOGCITASRCDIR" or implement m19010'⎕SIGNAL 11
  :EndIf
 
-R,←(~∨/'/\'=⊃⌽R)/⎕se.SALT.FS  ⍝ if R does not end with a folder-separator, add one
+ R,←(~∨/'/\'=⊃⌽R)/⎕SE.SALT.FS  ⍝ if R does not end with a folder-separator, add one

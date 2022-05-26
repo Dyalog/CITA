@@ -40,8 +40,8 @@ problems, pls. email mbaas@dyalog.com - it's too early for Issues, I think)
 To launch tests via Jenkins, use the UCMD `]TestRepo {name} -jenkins`  (we currently expect the name
 of a Dyalog repository).
 
-This all is also possible from the shell using cmdline `dyalog {RunCITA} RunUCMD="TestRepo {name} -jenkins"`.
-Replace `{RunCITA}` with {path to this repository}/client/RunCITA.dws`.
+This all is also possible from the shell using cmdline `dyalog {Executor} RunUCMD="TestRepo {name} -jenkins"`.
+Replace `{Executor}` with {path to this repository}/client/Executor.dws`.
 
 ### Configuration
 
