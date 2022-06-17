@@ -524,7 +524,7 @@
                           jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}step,' (using "',fl,'")  did not end properly (Timeout Error)')
                           :Leave
                       :Case 3
-                          job←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}'No statusfile (CITA.',step,'.[ok|err]) found after ',step,' ended')
+                      ⎕←    jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}'No statusfile (CITA.',step,'.[ok|err]) found after ',step,' ended')
                           :Leave
                       :Case 4
                           jobR←rc(jlog{0<≢⍺:⍺ ⋄ ⍵}'Invalid or non-existent file "',fl,'" for step "',step,'"')
@@ -572,7 +572,7 @@
               :EndIf
               Log,←⊂''
      
-              :If DEBUG ⋄ ⎕←'resTab[',(cnt+1),';',(int+1),']←"',ResultSymbols[1+rcTest;1],'"' ⋄ :EndIf
+            ⍝   :If DEBUG ⋄ ⎕←'resTab[',(cnt+1),';',(int+1),']←"',ResultSymbols[1+rcTest;1],'"' ⋄ :EndIf
               resTab[cnt+1;int+1]←ResultSymbols[1+rcTest;1]
               list2←⊃0(⎕NINFO ⎕OPT('Recurse' 1)('Wildcard' 1))xin,'*'   ⍝ remember files we had before tests were executed...
               del←0⍴⊂''
@@ -651,13 +651,13 @@
 ⍝TODO: better name (or remove it alltogether)...
       :If DEBUG
           x←⎕SE.UCMD'output.find off'
-          ⎕←(,'ZI4,<->,ZI2,<->,ZI2,< >,ZI2,<:>,ZI2,<:>,ZI2,<.>,ZI3'⎕FMT 1 7⍴⎕TS),', @',(⍕⎕AI[3]-ai3),'ms, ',(2⊃⎕SI),'[',(⍕2⊃⎕LC),']: ',txt
+          ⎕←(,'ZI4,<->,ZI2,<->,ZI2,< >,ZI2,<:>,ZI2,<:>,ZI2,<.>,ZI3'⎕FMT 1 7⍴⎕TS),', @',({6::'' ⋄ (⍕⎕AI[3]-⍎⍵),'ms, '}'ai3'),(2⊃⎕SI),'[',(⍕2⊃⎕LC),']: ',txt
           ai3←⎕AI[3]
           {}⎕SE.UCMD'output.find ',4↓x
       :EndIf
     ∇
 
-    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt;versions;platforms;tests;jns;BIT;sdirD
+    ∇ {ns}←TestRepo arg;fld;fl;loc;xin;rc;specs;R;step;specsObj;lg;cnt;list;showedIO;log;del;list2;v;xin∆;jlog;cfg;rcTest;interpreters;interpreter;t;int;resTab;plus;V;B;b;E;xinO;lint;dot;item;wd;args;url;sha;stages;cmdline_s;configfile;sdir;repo;platform;version;file_s;stage;file;job;cmdline;FixPath;rc1;aplv;log1;res;org;dcwd;home;hasCITA;lb;jenk;p1;EXTRAS;BITS;EDITIONS;EXTRA_i;EXTRA;EXTRAS_i;EDITION;dyalogversions;name;type;n1;cmdlinePre;dir;to;pth;jobName;fapl;html;rc∆;ht;xinD;cfgt;versions;platforms;tests;jns;BIT;sdirD;intro;fi
 ⍝:: Test a remote GitHub-repository
 ⍝?: Test a remote GitHub-repository
 ⍝?:
@@ -680,6 +680,7 @@
 ⍝A?: 102 - Problem "getting" test-specs (Details in ns.Log)
 ⍝A?: 103 - No APL found to test against (Details in ns.Log)
 ⍝A?: 104 - Internal problem
+⍝A?: 105 - Empty STAGES (no valid versions/platforms etc. found)
      
       _InitUCMDs
       _ai3←⎕AI[3]
@@ -767,7 +768,6 @@
               →Exit
           :EndIf
       :EndIf
-      ⎕←'arg 1 2=',arg.(_1 _2)
 ⍝ TODO: get CITA from web (or locally, that needs to be added above 721) and is used below (search SendMail)
      
 ⍝ create tempdir for stuff downloaded from repo
@@ -904,8 +904,13 @@
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    script{'
                   ⍝intro←('stage("',platform,'&&%CITA_VERSION%"){') '  agent{' ('    label "',platform,'&&%CITA_VERSION%"') '  }' '  steps{' '    catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {' '      script{'
 ⍝ Platform win has label"Windows" with Jenkins
-                  intro←('stage("',{'win'≡⎕C ⍵:'Windows' ⋄ ⍵}platform,'") {')'  steps{' '    script {'
-                  intro,←(⊂'      '),¨1⊃⎕NGET((1⊃⎕NPARTS file),'/stageintro.groovy')1
+                  intro←⊂'stage (''',{'win'≡⎕C ⍵:'Windows' ⋄ ⍵}platform,''') {'
+                  intro←intro,(platform≢'linux')/'  steps {' '    script {'
+                  :If ⎕NEXISTS fi←(1⊃⎕NPARTS file),'/stageintro.',platform,'.groovy'
+                      intro,←(⊂'      '),¨1⊃⎕NGET fi 1
+                  :Else
+                      intro,←(⊂'      '),¨1⊃⎕NGET((1⊃⎕NPARTS file),'/stageintro.groovy')1
+                  :EndIf
                   stage←''
      
                   EDITIONS←dyalogversions.editions
@@ -934,7 +939,6 @@
                               :For EDITION :In ⊆EDITIONS
                                   :For EXTRA :In ⊆EXTRAS
                                       sdir←xinO,{⍵∩('_.-/',⎕D,⎕A,⎕C ⎕A)}⎕←(platform,{1<≢⍵:'-',⍵ ⋄ '_'}EXTRA,'_'),version,EDITION[1],(⍕BIT),'/'
-                                      ⎕←'sdir=',sdir
 ⍝                                      ∘∘∘
                                       3 ⎕MKDIR sdir,repo ⍝ create subfolder for repo
                                       configfile←sdir,'cita.dcfg'
@@ -952,27 +956,33 @@
                                   :EndFor
                               :EndFor
                           :EndFor
-                          ⎕←'cmdline=',cmdline
-                          stage,←('%xinD%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R(2 FixPath xinD)(version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(ThisStage)
+                        ⍝   ⎕←'cmdline=',cmdline
+                          stage,←('%xinD%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R((2×'linux'≢platform) FixPath xinD)(version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯2↓∊'''',¨⍵,¨⊂''', '}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(ThisStage)
+                          intro←('%xinD%' '%VERSION%' '%CMDLINE%' '%CMDLINEPRE%' '%BITS%' '%EDITIONS%' '%EXTRAS%' '%PLATFORM%'⎕R((2×'linux'≢platform) FixPath xinD)(version)(cmdline)(cmdlinePre)({0=≢⍵:'' ⋄ ¯1↓∊(⍕¨⍵),¨','}BITS)({0=≢⍵:'' ⋄ ¯2↓∊'''',¨⍵,¨⊂''', '}EDITIONS)({0=≢⍵:'' ⋄ ¯1↓∊'"',¨⍵,¨⊂'",'}EXTRAS)platform⍠'Regex' 0)(intro)
                           :If 326=⎕DR∊stage ⋄ ∘∘∘
                           :EndIf
                       :EndFor
                   :Else
                       ns.Log,←⊂'Skipped platform "',platform,'" - no stage-file with platform-specific code found. (Looked for ',file_s,')'
                   :EndIf
-                  STAGES,←intro,((⊂'     '),¨stage),'    }' '  }' '}'
+                  STAGES,←intro,((⊂'     '),¨stage),'    }'
+                  STAGES,←(platform≢'linux')/'  }' '}'
                   :If 326=⎕DR∊STAGES ⋄ ∘∘∘
                   :EndIf
               :EndFor
+              :If 0=≢STAGES
+                  ns.Log←'Empty STAGES - nothing to do! (Check your filters)'
+                  ns.rc←105
+                  →0
+              :EndIf
               p1←⍸∊'%STAGES%'⍷job  ⍝ search string that we will replace with content of var "stages"
               lb←¯1+p1-⌈/⍸((⎕UCS job)∊10 13)∧(⍳≢job)<p1  ⍝ leading blanks of lines (so that we can maintain indent)
               job←((p1-lb)↑job),(∊(⊂lb⍴' '),¨STAGES,¨NL),{(+/∧\⍵∊⎕UCS 10 13)↓⍵}(p1{⊃(⍵>⍺)/⍵}⍸(⎕UCS job)∊10 13)↓job
               file←xinO,∊1↓⎕NPARTS file
               (⊂job)⎕NPUT file
               info'Wrote job to ',file
-              jenk←⎕NEW ##.JenkinsConnection('' ''((1⊃⎕NPARTS file),'httpcommand.log'))
+              jenk←⎕NEW ##.JenkinsConnection('' '') ⍝((1⊃⎕NPARTS file),'httpcommand.log'))
               jenk.(Debug Cleanup)←1 0
-            ⍝   jenk.HCLogFile←(1⊃⎕nparts file),'httpcommand.log'
               jf←⊃('<script>(.*)</script>'⎕S'\(1)'⍠('Mode' 'M')('DotAll' 1))job
               (⊂jf)⎕NPUT(∊2↑⎕NPARTS file),'.jenkinsfile'
               :If ~⊃z←jenk.Validate jf
@@ -1129,7 +1139,7 @@
               :EndIf
           :Else
               ns.Log←'Could not find required "',file,'" to build Jenkins job'
-              ns.rc←911
+              ns.rc←104
           :EndIf
           →Exit
       :EndIf   ⍝ -jenkins
@@ -1378,7 +1388,7 @@
           ⎕←'fpat=',(∊2↑⎕NPARTS 1⊃StatusFiles),'.*'
           ⎕←'ninfo=',⊃0(⎕NINFO ⎕OPT'Wildcard' 1)(∊2↑⎕NPARTS 1⊃StatusFiles),'.*'
       :EndIf
-ns.info←{(⍵,': ',(1+⎕nexists ⍵)⊃'missing' 'exists'),⎕ucs 13}¨StatusFiles
+      ns.info←{(⍵,': ',(1+⎕NEXISTS ⍵)⊃'missing' 'exists'),⎕UCS 13}¨StatusFiles
       :If ⎕NEXISTS aplcore
           ns.log←'Test led to an APLCORE: ',aplcore
           ns.R←6

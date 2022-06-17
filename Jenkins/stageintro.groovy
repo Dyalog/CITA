@@ -1,8 +1,10 @@
-def E=""
-def rc=-1
-def citaDEVT="/devt/"
-def testPath=""
-def CITAlog=""
-def cmdline = '%CMDLINE%'
-def exePath=""
-def exists=0
+int rc = -1
+
+String citaDEVT = '/devt/'
+String citaLOG = ''
+String cmdline = '%CMDLINE%'
+String ed = ''
+String exePath = ''
+String testPath = ''
+
+Boolean exists = false

@@ -1,0 +1,8 @@
+{ "Settings": {
+
+     keepDays: 5,     // keep everything from the last # days 
+     keepFolders: 20    // and make sure to keep a mininum of # folders  
+
+  }
+}
+

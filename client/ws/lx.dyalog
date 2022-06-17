@@ -85,12 +85,12 @@
          s,←{⎕ML←1 ⋄ ⍵≠1:'' ⋄ 1::'WS FULL gathering list of vars' ⋄ rep←res←⊃⍪/⊃,/{((⊂⍕⍵),¨'.',¨↓nl),[1.5]⍵.⎕SIZE nl←⍵.⎕NL⍳9}⎕SE._cita.swise¨# ⎕SE ⋄ j←(20⌊1↑⍴rep)↑⍒rep[;2] ⋄ ,⍕rep[j;],⊂NL}en
          dmx←{0::'' ⋄ ⍎'⎕DMX'}0  ⍝ can't use ⎕DMX because this code is saved with v12 that does not know ⎕DMX
          s,←{0::{0::'' ⋄ 'DMX=',∊dmx.({0::'' ⋄ ⍵,':',(⍎⍵),NL}¨⎕NL ¯2)}'' ⋄ 'DMX=',∊(⍎'(⎕JSON⎕OPT''Compact''0) dmx'),NL}''   ⍝ various fallsbacks so that this code can execute even on v12 (where it does not do anything - but also does not fail)
-         s,←'SALTUtils.dmx=',⍎'{0::''N/A'' ⋄ (⎕JSON',((1+82=⎕DR' ')⊃(⎕UCS 9056)'⎕OPT'),'''Compact''0)⎕se.SALTUtils.dmx}0'
+         s,←'SALTUtils.dmx=',{0::'N/A' ⋄ (⎕JSON⎕OPT''Compact''0)⎕se.SALTUtils.dmx}0
          en=1:s ⎕SE._cita._LogStatus'wsfull' 44
          ⎕SE._cita.Error s
      }
-     1(⎕NDELETE)⎕←(∊2↑⎕NPARTS CITA_Log),'.log'
-     1(⎕NDELETE)⎕←(∊2↑⎕NPARTS CITA_Log),'.log.json'
+     1(⎕NDELETE)(∊2↑⎕NPARTS CITA_Log),'.log'
+     1(⎕NDELETE)(∊2↑⎕NPARTS CITA_Log),'.log.json'
 
      wsFullReport←(500⍴⊂'PlaceHolder'),[1.5]1000000     ⍝ reserve a few bytes for our wsfullreport - just in case...
 

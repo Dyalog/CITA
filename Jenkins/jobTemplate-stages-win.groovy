@@ -1,23 +1,23 @@
-citaDEVT="U:/"
 stage ("win_%VERSION%") {
   script {
-      // if (nodesByLabel("CITA&&Windows").size() == 0)
-      // {
-      //   error("No nodes CITA&&Windows available...")
-      // }
+  // if (nodesByLabel("CITA&&Windows").size() == 0)
+  // {
+  //   error("No nodes CITA&&Windows available...")
+  // }
   }
   node ("CITA&&Windows") {
-    [%BITS%].each { BITS -> 
+    [%BITS%].each { BITS ->
       [%EDITIONS%].each { EDITION ->
         // catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
         try {
-        
-          echo "NODE_NAME = ${env.NODE_NAME}"            
-          E = EDITION.take(1)
+          citaDEVT="U:/"
+
+          echo "NODE_NAME = ${env.NODE_NAME}"
+          ed = EDITION.take(1)
           EDITION = EDITION.capitalize()
           echo "EDITION=${EDITION}"
           path = "/Windows/explorer.exe"
-          exists = fileExists(path)          
+          exists = fileExists(path)
           if (exists) {
             echo "PLATFORM=win, path=${path}: File exists!"
           } else {
@@ -30,43 +30,45 @@ stage ("win_%VERSION%") {
             path = "/Program Files/Dyalog/Dyalog APL-64 %VERSION% ${EDITION}"
           }
           path = "${path}/dyalog.exe"
-          exists = fileExists(path)          
+          exists = fileExists(path)
           if (exists) {
             echo "PLATFORM=win, path=${path}: File exists!"
           } else {
             echo "File ${path} does not exist"
-            error "Found no interpreter for ${E}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
+            error "Found no interpreter for ${ed}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
           }
-          testPath="%xinD%win_%VERSION%${E}${BITS}/"
-          CITAlog="${testPath}CITA.log.json"
+          testPath="%xinD%win_%VERSION%${ed}${BITS}/"
+          citaLOG="${testPath}CITA.log.json"
           //cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
-          cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${CITAlog} CITADEBUG=1"
+          cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${citaLOG} CITADEBUG=1"
           //cmdline = "${cmdline} > ${testPath}ExecuteLocalTest.log"
           echo "Launching ${path} ${cmdline} "
           rjc = bat(script: "\"${path}\" ${cmdline}" , returnStatus: true)
-          echo "CITAlog=$CITAlog"
-          CITAlog="${testPath}CITA.log.ok" // remove this line if we can work with .json file!
-          exists = fileExists (CITAlog)
-          echo "exists=$exists"
-          if (exists) {
-            // echo "reading JSON"
-            // def props = readJSON file: "$CITAlog"
-            // def keyList = props.keySet()
-            // echo "R="
-            // echo props
-            // echo "keylist="
-            // echo keylist
-            rc = 0
+          echo "citaLOG=$citaLOG"
+          citaLOG="${testPath}CITA.log.json" // remove this line if we can work with .json file!
+          exists = fileExists(citaLOG)
+          echo "citaLOG=$citaLOG, exists=$exists"
+          rc = 0
+          if (exists){
+            props = readJSON file: "${citaLOG}"
+            echo "R="
+            props.each { key, value ->
+              // echo "$key .rc=" . props["$key"]['rc'].toString()
+              if (props["$key"]['rc'] != 0) {
+                rc = 1
+              }
+            }
           } else {
-            echo "Test did not end with status file $CITAlog"
+            echo "Test did not end with JSON log ${citaLOG}"
             rc = 1
           }
-        } catch (err) {
+        } catch (err)
+        {
           echo "Caught error: ${err}"
           rc = 1
         }
+        }
       }
-    }
     if (rc != 0)
     {
       unstable("Stage failed!")
@@ -74,5 +76,5 @@ stage ("win_%VERSION%") {
     }
     echo "rc=${rc}"
     bat "exit ${rc}"
-  } 
-}
+    }
+  }

@@ -50,9 +50,12 @@
     ∇ New2(ciserver usr)
       :Access   public
       :Implements constructor
-      CISERVER←ciserver
-      JENKINS_USERNAME←usr
+      CISERVER←env'CISERVER'
+      JENKINS_USERNAME←env'JENKINS_USERNAME'
       JENKINS_APIKEY←env'JENKINS_APIKEY'
+     
+      :If 0<≢ciserver ⋄ CISERVER←ciserver ⋄ :EndIf
+      :If 0<≢usr ⋄ JENKINS_USERNAME←usr ⋄ :EndIf
       Init
     ∇
 
@@ -77,10 +80,20 @@
      ⍝ but that requires all installations to have the latest version...
       ⎕SE.SALT.Load HomeDir,'/../deps/HttpCommand/source/HttpCommand.dyalog -target=#'         ⍝ needs Brians updates from Feb3d, so we need to keep it in the same folder!
 ⍝ temporary, while testing new conga from BHC
-'Conga'#.⎕cy'Conga'
-#.HttpCommand.CongaPath←'c:/git/CITA/'
-#.Conga.DllVer←'35'
+      'Conga'#.⎕CY'Conga'
+      #.HttpCommand.CongaPath←'c:/git/CITA/'
+      #.Conga.DllVer←'35'
 ⍝ end temporary...
+      :If 0=≢CISERVER
+          'No CISERVER set!'⎕SIGNAL 6
+      :EndIf
+      :If 0=≢JENKINS_USERNAME
+          'No JENKINS_USERNAME set!'⎕SIGNAL 6
+      :EndIf
+      :If 0=≢JENKINS_APIKEY
+          'No JENKINS_APIKEY set!'⎕SIGNAL 6
+      :EndIf
+     
       crumb←(get'/crumbIssuer/api/json').crumb
     ∇
 
@@ -356,7 +369,7 @@
     ⍝ curl -s -XPOST "${CISERVER}/job/${JOBNAME}/build" -H "$CRUMB" -u $CREDS
      
       :If debug ⋄ ⎕←'Running job' ⋄ :EndIf
-      (r h)←1 post CISERVER,'/job/',JOBNAME,'/build' ⍝ build it... 
+      (r h)←1 post CISERVER,'/job/',JOBNAME,'/build' ⍝ build it...
       :If r.rc=0
       :AndIf r.HttpStatus∊200 201
 ⍝ Jenkins takes a moment to start the job, the lastBuild will return a 404 until the FIRST job is running or has completed

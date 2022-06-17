@@ -1,0 +1,47 @@
+ R←cleanup nul;srcFile;fld;z;dn
+⍝ remove old folders (see settings in .dcfg)
+ :If 0=≢fld←2 ⎕NQ'.' 'GetEnvironment' 'FOLDER'
+     :If '18.0'≡4↑2⊃'.'⎕WG'APLVersion'
+         srcFile←4⊃5179⌶1⊃⎕SI
+     :Else
+         srcFile←50 ⎕ATX 1⊃⎕SI
+     :EndIf
+     :If 0=≢srcFile   ⍝ where is this file at home?
+         ⎕←'Could not find a home directory for current function!'
+         ∘∘∘
+     :EndIf
+     fld←1⊃⎕NPARTS srcFile
+ :EndIf
+ :Trap 0
+     fld←∊1 ⎕NPARTS fld
+     fld←↑0 1 3(⎕NINFO⍠'Wildcard' 1)(fld,'/*')
+     :If ~0∊⍴fld
+         fld←fld⍪{11::1⎕dt⊂1970 1 2⊣⎕←'Caught error with value ',⍵ ⋄ 1 ⎕DT⊂⍵}¨fld[3;]
+         :If (1↓fld[3;])≡¯1↓fld[3;]
+         :AndIf 1970 1 1 1 0 0 0≡1⊃fld[3;]  ⍝ when I used 10 instead of 3 we got the epoch on MacOS BigSur. Hope 3 will have fixed that...
+             ⎕←'⎕NINFO not working!'
+             →0
+         :EndIf
+     :EndIf
+ :Else
+     ⎕←(⎕JSON ⎕OPT'Compact' 0)⎕DMX
+     ⎕←'fld==='
+     ⎕←fld
+     ⎕←'==='
+     ⎕←'Stopped here'
+     →0
+ :EndTrap
+
+ keepDays←2⊃⎕VFI 2 ⎕NQ'.' 'GetEnvironment' 'keepDays'
+ keepFolders←2⊃⎕VFI 2 ⎕NQ'.' 'GetEnvironment' 'keepFolders'
+
+
+ dn←1 ⎕DT⊂7↑3↑⊃¯1 ⎕DT(-keepDays)+1 ⎕DT⊂⎕TS   ⍝ cut off date
+ z←(fld[2;]=1)∧(fld[4;]<dn)∧keepFolders<⌽+\⌽fld[2;]=1
+
+ :If ∨/∊z
+     {0:: 'Error deleting ',⍵,':',,⎕dmx,¨⎕ucs 13 ⋄ ⎕←⎕sh ⎕←'sudo rm -R ',⍵}¨z/fld[1;]
+     ⍝{0:: 'Error deleting ',⍵,':',,⎕dmx,¨⎕ucs 13 ⋄ 3 ⎕NDELETE ⍵}¨z/fld[1;]
+ :Else
+     ⎕←'Nothing to clean up!'
+ :EndIf

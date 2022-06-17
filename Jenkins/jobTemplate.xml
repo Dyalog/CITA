@@ -14,62 +14,69 @@
   <properties/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.87">
     <script>
-    def nodetest() { 
-      sh('echo "alive on $(hostname)"') 
-    } 
-    def nodetestWIN() { 
-      bat('echo "alive on $(hostname)"') 
-    } 
+    void nodetest() {
+      sh('echo "alive on $(hostname)"')
+    }
+    void nodetestWIN() {
+      bat('echo "alive on $(hostname)"')
+    }
     pipeline {
       agent any
-      options { 
-        disableConcurrentBuilds() 
+      options {
+        disableConcurrentBuilds()
       }
       stages {
-        stage ("Cleanup") {
+        stage ('Cleanup') {
           agent {
-            label "aix&&18.2&&cita_latest"
+            label 'aix&&18.2&&cita_latest'
           }
           steps {
             cleanWs()
             catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
               script {
-                def citaDEVT = "/devt/"
-                echo "This job is executed in: %xinD%"  // might be useful to be explicit about it...
-                sh "/opt/mdyalog/18.2/64/unicode/p9/mapl load=/devt/apltools/CITA/CITA-Tests/cleanup.aplf configfile=/devt/apltools/CITA/CITA-Tests/cleanup.dcfg FOLDER=%xinD%.."                             
-                sh "exit 0"  // end this step w/o problem-status, as it would avoid execution of next steps...
+                string citaDEVT = '/devt/'
+                echo "This job is executed in: %xinD%"
+                string cmdline = '/opt/mdyalog/18.2/64/unicode/p9/mapl'
+                cmdline = "${cmdline} load=%xinD%CITA/cleanup.aplf"
+                cmdline = "${cmdline} configfile=%xinD%CITA/cleanup.dcfg"
+                cmdline = "${cmdline} FOLDER=%xinD%.."
+                sh cmdline
+
+                // ensure that install-dyalog is executable...(neded to do linux tests...)
+                sh "sudo -n chown -R $USER:dyalog %xinD%CITA/install-dyalog"
+                sh "chmod 777 %xinD%CITA/install-dyalog"
+
+                sh 'exit 0'  // end this step w/o problem-status, as it would avoid execution of next steps...
               }
             }
           }
         }
-        stage ("Run Tests") {
+        stage ('Run Tests') {
           parallel {
             %STAGES%  
           }
         }
-        stage ("Unlock") {
+        stage ('Unlock') {
           agent {
-            label "aix&&18.2&&cita_latest"
+            label 'aix&&18.2&&cita_latest'
           }
           steps {
             script {
-              //catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
               try {
-                def citaDEVT = "/devt/"
                 // permissions for everything in the test's folder
                 // no longer needed...
-                // sh "find %xinD% -user $USER -exec chmod -R 755 {} +"
-                sh "find %xinD% -user jenkins -exec chmod -R 755 {} \\;"
+                ed = "find %xinD% -user jenkins"
+                sh "${ed} -exec chmod -R 755 {} \\;"
                 // and now delete the lockfile
-                def LOCKFILE="%LOCKFILE%"
-                if (LOCKFILE != "") {
-                  sh "rm $LOCKFILE"
+                string lockFILE = "%LOCKFILE%"
+                if (lockFILE != '') {
+                  sh "rm $lockFILE"
                 }
               } catch (err) {
                 echo "Caught error: ${err}"
-                unstable("Stage failed!")
+                unstable('Stage failed!')
               }
-            } 
+            }
           }
         }
       }
