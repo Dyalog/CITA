@@ -10,7 +10,7 @@
  SMTP_SERVER: "mail.dyalog.com",
  SMTP_PORT: 25,
  SMTP_FROM_ADDRESS: "cita@dyalog.com",
- SMTP_PASSWORD: "XnkGNI0Nwo",
+ SMTP_PASSWORD: "",  //this must come from a envvar!
  SMTP_USER: "noaccount@dyalog.com",
 
  // this is optional and only needed if you wish
