@@ -759,9 +759,10 @@
               hasCITA←##.GitHub.HasCITA url
           :Else
               url←'https://api.github.com/repos/',arg._1,'/',arg._2
+              hasCITA←⎕NEXISTS(_getConfig'GetReposFrom'),arg._2,'/CITA.json5'
           :EndIf
           :If ~hasCITA
-          :AndIf arg._2{0=≢⍵:1 ⋄ ~⎕NEXISTS ⍵,⍺,'/CITA.json5'}2 ⎕NQ'.' 'GetEnvironment' 'CITAGetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
+          :AndIf arg._2{0=≢⍵:1 ⋄ ~⎕NEXISTS ⍵,⍺,'/CITA.json5'}_getConfig'GetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
           :AndIf ~##.GitHub.HasCITA arg.(_1 _2)
               ns.rc←102
               ns.Log←⊂'Repository ',(∊arg.(_1'/',_2)),' does not contain CITA.json[5]'
@@ -784,15 +785,15 @@
 ⍝arg.bits←{' '=⍥⎕dr ⍵:2⊃⎕vfi ⍵ ⋄ ⍵}','(≠⊆⊢)arg.bits
      
           (org repo)←arg.(_1 _2)
-          :If 0=≢dcwd←2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITAWORKDIR'
+          :If 0=≢dcwd←_getConfig'WORKDIR'
               ns.rc←105
-              ns.Log←'Environment variable (or config setting) "DYALOGCITAWORKDIR" not found!'
+              ns.Log←'Environment variable (or config setting) "WORKDIR" not found!'
               →Exit
           :EndIf
           wd←dcwd,(~∨/'\/'∊⊢/dcwd)/'/'  ⍝ make sure path ends with '/'
           :If ~⎕NEXISTS dcwd
               ns.rc←105
-              ns.Log←'DYALOGCITAWORKDIR not set or invalid! (Value="',dcwd,'")'
+              ns.Log←'WORKDIR not set or invalid! (Value="',dcwd,'")'
               →Exit
           :EndIf
           jobName←repo,'_',arg{0::2⊃⍵ ⋄ ⍺⍎⍵}'branch' 'main'
@@ -825,7 +826,7 @@
         ⍝   ⎕←'xinD=',xinD
           3 ⎕MKDIR xinO,'CITA'
 ⍝ 675 and below
-          :If 0=≢res←2 ⎕NQ'.' 'GetEnvironment' 'CITAGetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
+          :If 0=≢res←_getConfig'GetReposFrom'   ⍝ optional, may define local path to a git (which has subfolders for CITA and DBuildTest)
           :OrIf 'git'≡⎕C res
           :OrIf ~⎕NEXISTS res
               :If 0≠⊃res←(xinO,'CITA/')##.GitHub.GetFilesFromSHA'Dyalog' 'CITA'
@@ -876,10 +877,11 @@
 ⍝ use a CONFIGFILE from the parent folder of DYALOGCITAWORKDIR
           cfg←⎕NS''
           cfg.Settings←⎕NS''
-          cfg.Settings.DYALOGCITASRCDIR←1 FixPath xinD,'CITA'
+          cfg.Settings.CITA_SRCDIR←1 FixPath xinD,'CITA'
           cfg.Settings.DEFAULT_PW←400
      
           (xinO,'CITA/client')(⎕NCOPY⍠'IfExists' 'Replace')((+2 ⎕NQ'.' 'GetEnvironment' 'DYALOGCITASRCDIR'),'/client/Executor.dws')
+⍝          (xinO,'CITA/client')(⎕NCOPY ⎕OPT'IfExists' 'Replace')((_getConfig'SRCDIR'),'/client/Executor.dws')
           cmdlinePre←''
           cmdline←2 FixPath xinD,'CITA/client/Executor'    ⍝ .dws' don't specify extension to avoid failure if DWS
      
@@ -1275,6 +1277,7 @@
           cfg,←' DYALOG_NOPOPUPS=1 PassExceptionsToOpSys=1'
       :EndIf
       cfg,←' CITADEBUG=',⍕DEBUG
+      cfg,←' CITA_SRCDIR=',∊1⎕nparts xin,'../CITA/'
      
       cpu←⎕AI[3]
       Fullname←∊1 ⎕NPARTS xin,file
@@ -1794,6 +1797,20 @@
       :EndTrap
     ∇
 
+    ∇ R←{num}_getConfig name
+      R←''
+      :If 2=⎕SE.CITA.Config.⎕NC name
+      :AndIf 0<≢⎕SE.CITA.Config⍎name
+          R←⎕SE.CITA.Config⍎name
+      :EndIf
+      :If 0<≢r←2 ⎕NQ'.' 'GetEnvironment'('CITA_',name)
+          R←r
+      :EndIf
+      :If 2=⎕NC'num'
+      :AndIf num
+          R←2⊃⎕VFI R
+      :EndIf
+    ∇
 
     :endsection
 

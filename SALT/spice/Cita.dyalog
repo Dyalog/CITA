@@ -94,6 +94,9 @@
               :If ureset
                   ⎕SE.SALTUtils.ResetUCMDcache 1  ⍝ avoid calling ]UReset, as that would add another call to List etc...
               :EndIf
+              ⎕SE.CITA.Config←(⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET Home,'/../CITA_Config.json5'
+     
+     
           :Else
               ⎕←'Computed home-folder for CITA ("',Home,'" did not exist - please contact mbaas@dyalog.com!'
               →0

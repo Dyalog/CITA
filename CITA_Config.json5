@@ -1,0 +1,22 @@
+{
+//**************************************************************
+//** CITA Configuration                                       **
+//**************************************************************
+// NB: ALL of these settings can be overridden by setting up
+// environment/configuration variables with the prefix "CITA_" followed
+// by the names used here.
+//
+// SMTP Settings to send mails    
+ SMTP_SERVER: "mail.dyalog.com",
+ SMTP_PORT: 25,
+ SMTP_FROM_ADDRESS: "cita@dyalog.com",
+ SMTP_PASSWORD: "XnkGNI0Nwo",
+ SMTP_USER: "noaccount@dyalog.com",
+
+ // this is optional and only needed if you wish
+ // to use local repos (instead of hosted)
+ GetReposFrom: "c:/git/",
+
+ // the path where it all happens:
+ WORKDIR: "u:/apltools/CITA/CITA-Tests/"
+ }
