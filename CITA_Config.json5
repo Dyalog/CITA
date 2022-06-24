@@ -5,18 +5,28 @@
 // NB: ALL of these settings can be overridden by setting up
 // environment/configuration variables with the prefix "CITA_" followed
 // by the names used here.
-//
+// Names should be UPPERCASED! (doesn't matter on Win, but hurts on other OSes)
+
 // SMTP Settings to send mails    
- SMTP_SERVER: "mail.dyalog.com",
- SMTP_PORT: 25,
- SMTP_FROM_ADDRESS: "cita@dyalog.com",
- SMTP_PASSWORD: "",  //this must come from a envvar!
- SMTP_USER: "noaccount@dyalog.com",
+// should be set via EnvVars (or .dcfg)
+ SMTP_SERVER: "",
+ SMTP_PORT: ,
+ SMTP_FROM_ADDRESS: "",
+ SMTP_PASSWORD: "",  
+ SMTP_USER: "",
 
  // this is optional and only needed if you wish
  // to use local repos (instead of hosted)
- GetReposFrom: "c:/git/",
+ // you may need to overwrite if you use a different path or 
+ // if you're not on Windows!
+ GETREPOSFROM: "c:/git/",
 
  // the path where it all happens:
- WORKDIR: "u:/apltools/CITA/CITA-Tests/"
+ // (see previous remarks wrt overwriting!)
+ WORKDIR: "u:/apltools/CITA/CITA-Tests/",
+
+ // users that want to use the CITA-API on their local machines may have
+ // to add CITA_SRCDIR to their .dcfg or environment...(when they use a different path)
+ SRCDIR:"/git/CITA",
+
  }
