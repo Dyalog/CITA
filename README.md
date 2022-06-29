@@ -46,8 +46,8 @@ Replace `{Executor}` with {path to this repository}/client/Executor.dws`.
 ### Configuration
 
 For this command to work, CITA needs various pieces of data that can be passed either through EnvVars
-or by using a .dcfg file. We need the following:
+or by using a .dcfg file. We need the following:  (no longer applies - we now have CITA_Config.json5! ** Rewrite! **)
 
 * `DYALOGCITAWORKDIR` - this is the folder in which CITA will run its tests. 
-Should point to `u:\apltools\CITA\CITA-Tests\` or `/devt/apltools/CITA/CITA-Tests/' under unix or macos<sup>1</sup>.
+Should point to `u:\apltools\CITA\Tests\` or `/devt/apltools/CITA/Tests/' under unix or macos<sup>1</sup>.
 

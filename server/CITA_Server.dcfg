@@ -1,7 +1,6 @@
 { "Settings": {
 
      // needs GITHUB_SECRET in the environment
-     "DYALOGSTARTUPSE":"../StartupSession/"
 
   }
 }

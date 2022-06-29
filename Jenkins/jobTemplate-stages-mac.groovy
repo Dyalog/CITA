@@ -30,15 +30,14 @@ stage ('mac_%CITA_VERSION%_%VERSION%') {
       citaLOG = "${testPath}CITA.log"
       echo "testPath=$testPath"
       echo "citaDEVT=$citaDEVT"
-      cmdline = "%CMDLINE% CONFIGFILE=${testPath}cita.dcfg CITA_Log=${citaLOG} citaDEVT=${citaDEVT}"
-      //cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
+      cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${citaLOG}"
+      cmdline = "$cmdline > ${testPath}ExecuteLocalTest.log"
 
       echo "cmdline=$cmdline"
       echo "citaLOG=$citaLOG"
       echo "Launching $exePath $cmdline"
       rc = sh(script: "$exePath $cmdline" , returnStatus: true)
       echo "rc=$rc"
-      sh "ls ${testPath}"
 
       exists = fileExists("${citaLOG}.json")
       echo "citaLOG=$citaLOG, exists=$exists"
@@ -65,6 +64,11 @@ stage ('mac_%CITA_VERSION%_%VERSION%') {
       unstable('Stage failed!')
       rc = 0
     }
+    // sh "ps -fu jenkins | awk '%xinD% {print $2}' | while read PID
+    //     do
+    //       sudo kill -9 $PID
+    //     done"
+
     echo "rc=$rc"
     sh "exit $rc"
   }

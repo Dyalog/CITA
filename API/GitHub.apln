@@ -53,7 +53,18 @@
       R←fields GetPagedResults url
     ∇
 
-
+    ∇ R←d SetStatus org_repo_sha;org;repo;sha;url;h;res
+      (org repo sha)←¯3↑(⊂DefaultOrg),⊆org_repo_sha
+      url←'https://api.github.com/repos/',org,'/',repo,'/statuses/',sha
+      :If 326=⎕DR d
+          d←⎕JSON d
+      :EndIf
+      h←_gethc url
+      h.Command←'post'
+      h.Params←d
+      h.Headers⍪←'Content-Type' 'application/json'
+      R←h.Run
+    ∇
 
     ∇ (R msg)←target RetrieveFile url;h;res;dir;tie
   ⍝ get specified file and save it as ⍺
@@ -140,9 +151,6 @@
       z←0
       :While 0=(res←h.Run).rc
           j←res.Data
-          :If ' '=⍥⎕DR j
-              j←⎕JSON j
-          :EndIf
           :If res.HttpStatus≠200
               ('Error: HttpStatus≠0!',(⎕UCS 13),⍕{6::'' ⋄ ⍵.message}j)⎕SIGNAL 11
           :EndIf
@@ -211,7 +219,9 @@
           url←url_headers
           headers←0 2⍴''
       :EndIf
-      :If 0=⎕NC'HttpCommand' ⋄ Init ⋄ :EndIf
+      :If 0=⎕NC'HttpCommand'
+        Init
+      :EndIf
       h←⎕NEW HttpCommand
       h.Headers←↑('Authorization'('token ',gat))('Accept' 'application/vnd.github.v3.raw ')
       :For (n v) :In ↓headers
@@ -362,7 +372,7 @@
       :ElseIf 0<≢t←{6::'' ⋄ SALT_Data.SourceFile}0
           HomeDir←1⊃⎕NPARTS t
       :EndIf
-      ⎕SE.SALT.Load HomeDir,'HttpCommand'
+      ⎕SE.SALT.Load'HttpCommand'
     ∇
 
     split←(≠⊆⊢)

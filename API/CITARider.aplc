@@ -230,11 +230,11 @@
           {}MyDRC.SetProp'' 'EventMode' 1
       :EndIf
       :If APLProcess≡⎕NULL
-      :if ⎕nexists SRCDIR,'APLProcess.dyalog'
-          APLProcess←⎕SE.SALT.Load SRCDIR,'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
-          :else 
-          APLProcess←⎕SE.SALT.Load 'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
-          :endif
+          :If ⎕NEXISTS SRCDIR,'APLProcess.dyalog'
+              APLProcess←⎕SE.SALT.Load SRCDIR,'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
+          :Else
+              APLProcess←⎕SE.SALT.Load'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
+          :EndIf
       :EndIf
     ∇
 
@@ -259,8 +259,10 @@
       :Access Public
       :Implements Constructor
       ⎕RL←⍬ 1  ⍝ for ED and _RunQA
-      ⎕←'CITARider: loading libraries'
       LoadLibraries
+      :If args≡'INIT'   ⍝ this is used to create a mini-instance that can be used to execute GetTcpPort
+          →0
+      :EndIf
       :If (0∊⍴args)∨(''≡0⍴args)  ⍝ spawn a local Ride - args is {env}
           host←'127.0.0.1' ⋄ port←GetTcpPort
           env←,⍕args ⋄ RIDE_INIT←'serve::',⍕port ⍝ only accept local connections
@@ -621,7 +623,7 @@
       (prompt output wins errors)←1 0 Execute expr  ⍝ wait for prompt=1 and no window
       :If ~prompt PromptIs 1 ⋄ 'APL'Error'Expression produced non-standard prompt: ',expr
       ⍝ :ElseIf wins≢NO_WIN ⋄ 'APL'Error'Expression produced a window: ',expr,', wins=',wins', prompt=',prompt
-      :ElseIf wins≢NO_WIN ⋄ output,NL,NL,(80⍴'-'),NL,'APL-Expression produced a window: expr="',expr,'", wins=',(⎕json wins)', prompt=',prompt  ⍝ MB: don't care about this problem, just return whatever we got back (AND a msg...)
+      :ElseIf wins≢NO_WIN ⋄ output,NL,NL,(80⍴'-'),NL,'APL-Expression produced a window: expr="',expr,'", wins=',(⎕JSON wins)', prompt=',prompt  ⍝ MB: don't care about this problem, just return whatever we got back (AND a msg...)
       :ElseIf errors≢NO_ERROR ⋄ Signal⊃errors
       :EndIf
     ∇
@@ -1091,7 +1093,7 @@
       ok∧←'Creating temp file'∆ 1('1',NL)NO_WIN NO_ERROR≡Execute'× (⊂',(⍕Stringify¨ondisk),') ⎕NPUT ''',tmpfile,''' 0'
       ok∧←'Fixing temp file'∆ 1(' OnDisk ',NL)NO_WIN NO_ERROR≡Execute'⎕←2 ⎕FIX ''file://',tmpfile,''''
       ok∧←'EditOpen temp file'∆ WINS≡,⊂win←EditOpen'OnDisk'
-      ok∧←'Deleting temp file'∆ 1('1',NL)NO_WIN NO_ERROR≡Execute'⎕←⎕NDELETE ''',tmpfile,''''
+      ok∧←'Deleting temp file'∆ 1('1',NL)NO_WIN NO_ERROR≡Execute'⎕NDELETE ''',tmpfile,''''
       ok∧←'EditFix temp file'∆(⊃⌽WINS)≡win2←win EditFix ondisk2  ⍝ will pop up a window to complain that file has disappeared
       ok∧←'EditFix temp file effect'∆ WINS≡win win2
       100 Reply win2   ⍝ fix and write back to file
@@ -1225,17 +1227,19 @@
     ∇
 
     ∇ R←SRCDIR
-    :access public shared
+      :Access public shared
       ⍝ source directory of current fn
-           ⎕←'APLVersion=',4↑2⊃'.'⎕WG'APLVersion'
-      :Select 4↑2⊃'.'⎕WG'APLVersion'
-      :CaseList '18.0' '18.1'
-          R←4⊃5179⌶1⊃⎕SI
-      :Case '18.2'
-          R←50 ⎕ATX 1⊃⎕SI
+      :Trap 0
+          :Select 4↑2⊃'.'⎕WG'APLVersion'
+          :CaseList '18.0' '18.1'
+              R←4⊃5179⌶1⊃⎕SI
+          :Else  ⍝ let's hope it's v19 and onward
+              R←50 ⎕ATX 1⊃⎕SI
+          :EndSelect
       :Else
-      ⎕←'SRCDIR: no case defined for APLVersion=',4↑2⊃'.'⎕WG'APLVersion'
-      :EndSelect
+          ⎕←'SRCDIR: trapped error in SRCDIR'
+          ⎕←(⎕JSON ⎕OPT'Compact' 0)⎕DMX
+      :EndTrap
       R←1⊃⎕NPARTS R
     ∇
 

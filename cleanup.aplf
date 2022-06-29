@@ -22,6 +22,7 @@
              ⎕←'⎕NINFO not working!'
              →0
          :EndIf
+         fld←fld[;⍋fld[4;]]
      :EndIf
  :Else
      ⎕←(⎕JSON ⎕OPT'Compact' 0)⎕DMX
@@ -37,10 +38,10 @@
 
 
  dn←1 ⎕DT⊂7↑3↑⊃¯1 ⎕DT(-keepDays)+1 ⎕DT⊂⎕TS   ⍝ cut off date
+ 
  z←(fld[2;]=1)∧(fld[4;]<dn)∧keepFolders<⌽+\⌽fld[2;]=1
-
  :If ∨/∊z
-     {0:: 'Error deleting ',⍵,':',,⎕dmx,¨⎕ucs 13 ⋄ ⎕←⎕sh ⎕←'sudo rm -R ',⍵}¨z/fld[1;]
+     {0:: 'Error deleting ',⍵,':',,⎕dmx,¨⎕ucs 13 ⋄ ⎕sh ⎕←'sudo rm -R ',⍵}¨z/fld[1;]
      ⍝{0:: 'Error deleting ',⍵,':',,⎕dmx,¨⎕ucs 13 ⋄ 3 ⎕NDELETE ⍵}¨z/fld[1;]
  :Else
      ⎕←'Nothing to clean up!'

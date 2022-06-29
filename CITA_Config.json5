@@ -1,32 +1,51 @@
 {
-//**************************************************************
-//** CITA Configuration                                       **
-//**************************************************************
-// NB: ALL of these settings can be overridden by setting up
-// environment/configuration variables with the prefix "CITA_" followed
-// by the names used here.
-// Names should be UPPERCASED! (doesn't matter on Win, but hurts on other OSes)
+    //**************************************************************
+    //** CITA Configuration                                       **
+    //**************************************************************
+    // NB: ALL of these settings can be overridden by setting up
+    // environment/configuration variables with the prefix "CITA_" followed
+    // by the names used here.
+    // While you can certainly edit anything here, the recommandation is to use
+    // "CITA_"-prefix envvars of configuration entries, asit would allow you to 
+    // easily upgrade your CITA installation by replacing the folder contents...
+    //
+    // Names should be UPPERCASED! (doesn't matter on Win, but hurts on other OSes)
 
-// SMTP Settings to send mails    
-// should be set via EnvVars (or .dcfg)
- SMTP_SERVER: "",
- SMTP_PORT: ,
- SMTP_FROM_ADDRESS: "",
- SMTP_PASSWORD: "",  
- SMTP_USER: "",
+    // SMTP Settings to send mails    
+    // should be set via EnvVars (or .dcfg)
+    SMTP_SERVER: "",
+    SMTP_PORT: 0,
+    SMTP_FROM_ADDRESS: "",
+    SMTP_PASSWORD: "",
+    SMTP_USER: "",
 
- // this is optional and only needed if you wish
- // to use local repos (instead of hosted)
- // you may need to overwrite if you use a different path or 
- // if you're not on Windows!
- GETREPOSFROM: "c:/git/",
+    // this is optional and only needed if you wish
+    // to use local repos (instead of hosted)
+    // you may need to overwrite if you use a different path or 
+    // if you're not on Windows!
+    GETREPOSFROM: "c:/git/",
 
- // the path where it all happens:
- // (see previous remarks wrt overwriting!)
- WORKDIR: "u:/apltools/CITA/CITA-Tests/",
+    // the path where it all happens:
+    // (see previous remarks wrt overwriting!)
+    WORKDIR: "u:/apltools/CITA/Tests/",
 
- // users that want to use the CITA-API on their local machines may have
- // to add CITA_SRCDIR to their .dcfg or environment...(when they use a different path)
- SRCDIR:"/git/CITA",
+    // this is a folder where we collect results of test for a longer time
+    // (whereas WORKDIR is more of a temporary nature.
+    //  wrt server-backup i was asked to keep them separate)
+    RESULTFOLDER: "u:/apltools/CITA/Results/",
 
- }
+    // users that want to use the CITA-API on their local machines may have
+    // to add CITA_SRCDIR to their .dcfg or environment...(when they use a different path)
+    // (it is not effective everywhere when set only here - bootstrapping issues...)
+    // SRCDIR:"/git/CITA",
+
+    // URL pointing to CITA_Server
+    // SERVERURL: "http://cita.dyalog.com/",
+    SERVERURL: "http://localhost:8080/",
+
+    // planned feature to replace all hardcoded references...
+    MAPPINGS: {
+        "devt": ["u:\\" , "/devt/", "/Volumes/devt/"]
+        },
+
+    }

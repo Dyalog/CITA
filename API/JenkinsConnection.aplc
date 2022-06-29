@@ -104,6 +104,9 @@
       :Else
           src←50 ⎕ATX 1⊃⎕SI
       :EndIf
+      :if 0<≢src    ⍝ no idea where came from!
+        src←⎕se.CITA.Home,'API/foo'  ⍝ assume we're within CITA...
+      :endif
       R←1⊃⎕NPARTS src
     ∇
 
@@ -125,7 +128,7 @@
       :EndIf
       res←#.HttpCommand.Get url prms('Accept-Encoding' 'gzip')
       :If 0<≢HCLogFile   ⍝ log details of this call
-          (⊂(HCLogHeader'get response'),1(⎕JSON⍠('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
+          (⊂(HCLogHeader'get response'),1(⎕JSON⎕opt('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
       :EndIf
      
      
@@ -168,7 +171,7 @@
           ⎕←'Call to "',url,'" did not end with rc=0'
           ⎕←res,'    ⍝ res'
           :If 0<≢res.Data
-              ⎕←('<.*>(.*)</.*>'⎕S'\1'⍠'Greedy' 0)¨('id="error-description".*>(.*</div>)'⎕S'\1'⍠'Greedy' 0)res.Data
+              ⎕←('<.*>(.*)</.*>'⎕S'\1'⎕opt'Greedy' 0)¨('id="error-description".*>(.*</div>)'⎕S'\1'⎕opt'Greedy' 0)res.Data
           :EndIf
           (1+⊃⎕LC)⎕STOP⊃⎕SI
           ⎕←(1+⊃⎕LC),' ⎕STOP ',⊃⎕SI
@@ -212,23 +215,20 @@
       res←h.Run
      
       :If 0<≢HCLogFile   ⍝ log details of this call
-          (⊂(HCLogHeader'response'),1(⎕JSON⍠('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
+          (⊂(HCLogHeader'response'),1(⎕JSON⎕opt('Compact' 0)('HighRank' 'Split'))res)⎕NPUT HCLogFile 2
       :EndIf
      
       :If res.rc∊0 1119  ⍝ retcode 1119 also ok (if HttpStatus is ok)
       :AndIf res.HttpStatus∊200 201
           R←res.(rc Data)
-        ⍝   ⎕←'─── Called ',url,' and got this'
-          ⎕←'post url=',url,' | res='
-          ⎕←{0::⍵ ⋄ (⎕JSON⍠'Compact' 0)⍵}res.Data
           :If retC=1
               R←res h
           :EndIf
      
       :Else
           (⊂res.Data)⎕NPUT((∊2↑⎕NPARTS HCLogFile),'.err.html')1  ⍝ TODO: this can probably be moved down inside the :Else - otherwise we don't really need that answer anymore...
-          :If 0=≢err←('<.*>(.*)</.*>'⎕S'\1'⍠'Greedy' 0)¨('id"error-description".*>(.*</div>)'⎕S'\1'⍠'Greedy' 0)res.Data
-              err←∊('name="skip2content".*>(.*)</div>'⎕S'\1'⍠'Greedy' 0)res.Data
+          :If 0=≢err←('<.*>(.*)</.*>'⎕S'\1'⎕opt'Greedy' 0)¨('id"error-description".*>(.*</div>)'⎕S'\1'⎕opt'Greedy' 0)res.Data
+              err←∊('name="skip2content".*>(.*)</div>'⎕S'\1'⎕opt'Greedy' 0)res.Data
           :EndIf
           :If 0<≢err
               R←1('Could not create job, got unexpected rc. Saved returned msg in ',file,'.err.html, relevant portion extracted as "',(∊err),'"')
@@ -236,7 +236,7 @@
               ⎕←'Call to "',url,'" did not end with rc=0 (and HttpStatus=200)'
               ⎕←res,'    ⍝ res'
               ⎕←'This might be an indicator of errors in the Jenkins script....'
-              ⎕←(⎕JSON⍠('HighRank' 'Split')('Compact' 0))res
+              ⎕←(⎕JSON⎕opt('HighRank' 'Split')('Compact' 0))res
               (1+⊃⎕LC)⎕STOP⊃⎕SI
           :EndIf
       :EndIf
@@ -254,16 +254,10 @@
       :EndIf
      
       (bool msg)←('jenkinsfile'job)post CISERVER,'/pipeline-model-converter/validate'
-      :If bool≢0
-          ⎕←'Syntax check returned...'
-          ⎕←'bool=',bool
-          ⎕←'msg=',msg
-          ∘∘∘
-      :EndIf
       bool←∨/'Jenkinsfile successfully validated'⍷msg
     ∇
 
-    ∇ ns←file RunJob jobname;h;con;⎕TRAP;r;bin;url;res;sink;cv;binPre;binPost;rdbl;ns;rc
+    ∇ ns←file RunJob jobname;h;con;⎕TRAP;r;bin;url;res;sink;cv;binPre;binPost;rdbl;ns;rc;tab;j;log;fails;tr;t4;f;fn;host
       :Access public
       :If ''≢1⊃LOCKFILE
           z←1
@@ -294,8 +288,8 @@
       :EndIf
     ⍝   :If 0<≢load_workspace
     ⍝       dws←∊1↓⎕NPARTS load_workspace
-    ⍝       ('u:\apltools\CITA\',dws)(⎕NCOPY⍠'IfExists' 'Replace')load_workspace
-    ⍝       bin←('$APP'⎕R'/devt/apltools/CITA'⍠('Regex' 0))bin
+    ⍝       ('u:\apltools\CITA\',dws)(⎕NCOPY⎕opt'IfExists' 'Replace')load_workspace
+    ⍝       bin←('$APP'⎕R'/devt/apltools/CITA'⎕opt('Regex' 0))bin
     ⍝   :EndIf
       i←⍸'<script>'⍷bin ⋄ binPre←(i+7)↑bin ⋄ bin←(i+7)↓bin
       i←⍸'</script>'⍷bin ⋄ binPost←(i-1)↓bin ⋄ bin←(i-1)↑bin
@@ -321,28 +315,28 @@
       :If 0<≢Labels
           Labels←(⊂'&apos;'),¨Labels,¨⊂'&apos;'
           Labels←¯1↓∊Labels,','
-          bin←('%LABELS%'⎕R Labels⍠'Regex' 0)bin
+          bin←('%LABELS%'⎕R Labels⎕opt'Regex' 0)bin
       :EndIf
      
      
       cv←''
       :If 0<≢CITA_VERSION
           cv←CITA_VERSION
-          bin←('%CITA_VERSION%'⎕R cv⍠('Regex' 0))bin
+          bin←('%CITA_VERSION%'⎕R cv⎕opt('Regex' 0))bin
       :Else
-          bin←('&&%CITA_VERSION%'⎕R''⍠('Regex' 0))bin
+          bin←('&&%CITA_VERSION%'⎕R''⎕opt('Regex' 0))bin
       :EndIf
-      bin←('%LOCKFILE%'⎕R(2⊃LOCKFILE)⍠('Regex' 0))bin
+      bin←('%LOCKFILE%'⎕R(2⊃LOCKFILE)⎕opt('Regex' 0))bin
  ⍝     ⎕←'file=',file
 ⍝      (⎕lc[1]+1)⎕stop 1⊃⎕si
      
       bin←('&(?![a-z]*;)'⎕R'&amp;')bin
-      bin←('"' '''' '%cmdline%' '<' '>'⎕R'&quot;' '&apos;'Commandline'&lt;' '&gt;'⍠('Regex' 0))bin
+      bin←('"' '''' '%cmdline%' '<' '>'⎕R'&quot;' '&apos;'Commandline'&lt;' '&gt;'⎕opt('Regex' 0))bin
      
       bin←binPre,bin,binPost
       res←bin post(url(1 2⍴'Content-Type' 'application/xml'))
       (⊂bin)⎕NPUT(file,'.submitted')1     ⍝ save script as it was submitted
-    ⍝   rdbl←('&quot;' '&apos;' '&amp;' '&lt;' '&gt;'⎕R(,¨'"''&<>')⍠'Regex' 0)bin
+    ⍝   rdbl←('&quot;' '&apos;' '&amp;' '&lt;' '&gt;'⎕R(,¨'"''&<>')⎕opt'Regex' 0)bin
     ⍝   (⊂rdbl)⎕NPUT(file,'.subm.rdbl')1     ⍝ a human-readable form
      
       :If 0≠⊃res
@@ -416,12 +410,31 @@
               i←⊃⍒r.Data.startTimeMillis   ⍝ find the last run
               (i⊃r.Data).(id name status)   ⍝ name of job and status
               tab←↑(⊂CISERVER(i⊃r.Data).stages){w←⍵ ⋄ w[4]←⊂'<a href="',(1⊃⍺),(4⊃⍵),'">log</a>' ⋄ w
-              }¨(i⊃r.Data).stages.((id name status _links.self.href),⊂{6::'' ⋄ ⍎⍵}'error.message')    ⍝ stages, result & error msg, if available---
+              }¨(i⊃r.Data).stages.(id name status _links.self.href)    ⍝ stages, result & error msg, if available---
               :If ∨/z←tab[;3]≢¨⊂'SUCCESS'  ⍝ we had some failures...
             ⍝ temporarily: write out this list as a way of seeing what went qwrong...
-                  h←'<table>',NL,' <tr><td>id</td><td>name</td><td>status</td><td>url</td><td>msg</td></tr>',NL
-                  tab←h,(∊{' <tr>',⍵,'</tr>',NL}¨↓({'<td>',(⍕⍵),'</td>'}¨z⌿tab)),NL,'</table>'
-                  ns.StageTab←tab
+                  h←'<table>',NL,' <tr><td>id</td><td>name</td><td>status</td><td>url</td></tr>',NL
+                  :For j :In ⍸z
+                      url←⊃('<a.*href="(.*)".*>.*</a>'⎕S'\1')4⊃tab[j;]    
+                      host←(3>+\url='/')/url
+                      tr←tab[j;]
+                      log←#.HttpCommand.Get url
+                      :If 2≠(⎕JSON log.Data).⎕NC'stageFlowNodes'  ⍝ two types of errors are possible: with a stageflownode (below) or on top level (this branch)
+                      :orif 0=≢(⎕json log.Data){0::⍬ ⋄ ⍺⍎⍵}'stageFlowNodes'
+⍝                          tr[4]←⊂('<a href="(.*)">(.*)</a>'⎕S'<a href="',url,'">log</a>')4⊃tr
+                          h←h,NL,({' <tr>',⍵,'</tr>',NL}∊({'<td>',(⍕⍵),'</td>'}¨tr)),NL
+                      :Else
+                          fn←(⎕JSON log.Data).stageFlowNodes
+                          fails←⍸fn.status≡¨⊂'FAILED'
+                          t4←'<a href="',url,'">log</a> '
+                          :For f :In ⍳≢fails
+                            t4,←'<a href="',host,((fails[f]⊃fn)._links.self.href),'">e',(⍕f),'</a> '
+                          :EndFor                   
+                          tr[4]←⊂t4
+                          h←h,NL,({' <tr>',⍵,'</tr>',NL}∊({'<td>',(⍕⍵),'</td>'}¨tr)),NL
+                      :EndIf
+                  :EndFor
+                  ns.StageTab←h,'</table>',NL
                   ⍝(⊂tab)⎕NPUT ⎕←(∊2↑⎕NPARTS file),'-stages.html'
               :EndIf
           :EndIf

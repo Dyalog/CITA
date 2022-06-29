@@ -14,74 +14,73 @@
   <properties/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.87">
     <script>
-    void nodetest() {
-      sh('echo "alive on $(hostname)"')
-    }
-    void nodetestWIN() {
-      bat('echo "alive on $(hostname)"')
-    }
-    pipeline {
-      agent any
-      options {
-        disableConcurrentBuilds()
+void nodetest() {
+sh('echo "alive on $(hostname)"')
+}
+void nodetestWIN() {
+bat('echo "alive on $(hostname)"')
+}
+pipeline {
+  agent any
+  options {
+    disableConcurrentBuilds()
+  }
+  stages {
+    stage ('Cleanup') {
+      agent {
+        label 'aix&&18.2&&cita_latest'
       }
-      stages {
-        stage ('Cleanup') {
-          agent {
-            label 'aix&&18.2&&cita_latest'
-          }
-          steps {
-            cleanWs()
-            catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-              script {
-                string citaDEVT = '/devt/'
-                echo "This job is executed in: %xinD%"
-                string cmdline = '/opt/mdyalog/18.2/64/unicode/p9/mapl'
-                cmdline = "${cmdline} load=%xinD%CITA/cleanup.aplf"
-                cmdline = "${cmdline} configfile=%xinD%CITA/cleanup.dcfg"
-                cmdline = "${cmdline} FOLDER=%xinD%.."
-                sh cmdline
+      steps {
+        cleanWs()
+        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+          script {
+            string citaDEVT = '/devt/'
+            echo 'This job is executed in: %xinD%'
+            string cmdline = '/opt/mdyalog/18.2/64/unicode/p9/mapl'
+            cmdline = "${cmdline} load=%xinD%CITA/cleanup.aplf"
+            cmdline = "${cmdline} configfile=%xinD%CITA/cleanup.dcfg"
+            cmdline = "${cmdline} FOLDER=%xinD%.."
+            sh cmdline
 
-                // ensure that install-dyalog is executable...(neded to do linux tests...)
-                sh "sudo -n chown -R $USER:dyalog %xinD%CITA/install-dyalog"
-                sh "chmod 777 %xinD%CITA/install-dyalog"
+            // ensure that install-dyalog is executable...(neded to do linux tests...)
+            sh "sudo -n chown -R $USER:dyalog %xinD%CITA/install-dyalog"
+            sh "chmod 777 %xinD%CITA/install-dyalog"
 
-                sh 'exit 0'  // end this step w/o problem-status, as it would avoid execution of next steps...
-              }
-            }
-          }
-        }
-        stage ('Run Tests') {
-          parallel {
-            %STAGES%  
-          }
-        }
-        stage ('Unlock') {
-          agent {
-            label 'aix&&18.2&&cita_latest'
-          }
-          steps {
-            script {
-              try {
-                // permissions for everything in the test's folder
-                // no longer needed...
-                ed = "find %xinD% -user jenkins"
-                sh "${ed} -exec chmod -R 755 {} \\;"
-                // and now delete the lockfile
-                string lockFILE = "%LOCKFILE%"
-                if (lockFILE != '') {
-                  sh "rm $lockFILE"
-                }
-              } catch (err) {
-                echo "Caught error: ${err}"
-                unstable('Stage failed!')
-              }
-            }
+            sh 'exit 0'  // end this step w/o problem-status, as it would avoid execution of next steps...
           }
         }
       }
     }
-    </script>
+    stage ('Run Tests') {
+      parallel {
+        %STAGES%  
+      }
+    }
+  }
+  post {
+    cleanup {
+      script {
+        node ('aix&&%CITA_VERSION%&&18.2') {
+          try {
+            // permissions for everything in the test's folder
+            // no longer needed...
+            sh "find %xinD% -user jenkins -exec chmod -R 755 {} \\;"
+            // and now delete the lockfile
+            string lockFILE = "${citaDEVT}apltools/CITA/Tests/tmp_main.lock-jenkins"
+            if (0 == lockFILE.length()) {
+              sh "rm ${lockFILE}"
+            }
+            sh 'exit 0'
+          } catch (err) {
+            echo "Caught error: ${err}"
+            unstable('Stage failed!')
+          }
+        }
+      }
+    }
+  }
+}    
+      </script>
     <sandbox>true</sandbox>
   </definition>
   <triggers/>

@@ -1,8 +1,9 @@
 :namespace CITA_Server
     nl←⎕ucs 13
+    sec←2 ⎕NQ'.' 'GetEnvironment' 'GITHUB_SECRET'
 
     ∇ r←Run
-    ⎕←'This is CITA/server/CITA_Server.Run!'
+      ⎕←'This is CITA/server/CITA_Server.Run!'
       :If 0=⎕SE.⎕NC'UCMD'
           ⎕←'Loading session'
           d←2 ⎕NQ'.' 'GetEnvironment' 'DYALOG'
@@ -11,10 +12,10 @@
           ⎕DL 1 ⍝ make sure we don't have a timing issue
           ⎕SE.Dyalog.Callbacks.WSLoaded 1
       :EndIf
+      ⎕SE.UCMD'CITA.GetAPI'
       ⎕←'Loading DCL/Crypt'
       ⎕SE.SALT.Load Home,'../deps/DCL/Crypt.dyalog -target=#'
       #.Crypt.Init Home,'../deps/DCL/'
-      ⎕se.UCMD'CITA.GetAPI'
       r←0
       ⎕←'Ran Run-fn ;)   Home=',Home
       ⎕←'NC=',⍕⎕SE.⎕NC'CITA'
@@ -23,20 +24,19 @@
     ∇
 
     getHeader←{2⊃⍵[⍵[;1]⍳⊆⍺;]}
-    hash←{#.Crypt.(HASH_SHA256 Hash (⎕ucs'UTF-8'⎕ucs ⍵))}
     stringToHex←{⎕IO←0⋄∊⍉(16⍴⎕D,⎕A)[16 16⊤⎕UCS ⍵]}
+    hash←{#.Crypt.(HASH_SHA256 Hash (⎕ucs'UTF-8'⎕ucs ⍵))}
 
 
-    ∇ res←{req}WebHook arg;log;event;sig;sec;secH;repo
+    ∇ res←{req}WebHook arg;log;event;sig;secH;repo
       log←'─── QueryParams ─── ',nl,,req.QueryParams,nl
       log,←'─── Headers ───',nl,,⍕req.Headers,nl
       log,←'─── Payload: ───',nl
-      log,←((⎕JSON⍠'Compact' 0)arg),nl
+      log,←((⎕JSON ⎕OPT'Compact' 0)arg),nl
      
       event←'x-github-event'getHeader req.Headers
       log,←'event=',event,nl
       sig←'x-hub-signature-256'getHeader req.Headers
-      sec←2 ⎕NQ'.' 'GetEnvironment' 'GITHUB_SECRET'
       :If sig≢'sha256=',⎕C stringToHex(#.Crypt.HMAC_SHA256 sec)#.Crypt.Hash req.Body
           log,←'Could not verify secret - will not do anything on our repos!',nl
           res←''   ⍝ don't give' em anything
@@ -63,9 +63,60 @@
       res←'Processed your request'
     ∇
 
+
+    ∇ res←{req}GetFile arg;file;iMap;zMap;key;cnt
+    ⍝ GetFile?name=filename&pass=...
+    ⍝ pass is [stringToHex] hash sec,name
+      res←''
+      :If 2 2≢∊arg.⎕NC¨'file' 'key'
+          →0   ⍝ if request does not have required elements, exit w/o giving a reason
+      :EndIf
+      arg.file←⎕se.CITA.API._UrlDecode arg.file
+      key←⎕C stringToHex hash arg.file,2 ⎕NQ'.' 'GetEnvironment' 'GITHUB_SECRET'
+      ⎕←'key=',key
+      file←⎕SE.CITA.API._base64dec arg.file
+      ⎕←'file=',file
+      res←⎕NS''
+      res.title←'CITA GetFile'
+      :If key≡arg.key    ⍝ valied request
+          zMap←1⊃¨⎕SE.CITA.Config.MAPPINGS.devt{⍺⍷⍥⎕c ⍵}¨⊂file
+          :If ~∨/zMap
+          :AndIf ~⎕NEXISTS file
+              ⎕←'Could not find any known mappings of "devt" in path of file "',file,'"'
+              res←'<b>Internal error in GetFile</b>'
+              →0
+          :Else
+              iMap←⍸zMap
+          :EndIf
+          done←0
+          :Repeat
+              :If ⎕NEXISTS file
+                  cnt←1⊃⎕NGET file
+                  :If '<html>'≢6↑⎕C cnt
+                      cnt←'<html><body><pre><p style="line-height: 20px;background-color: lightgrey;border-bottom: 2px solid;">File: ',file,'</p>',cnt,'</pre></body></html>'
+                      res.title,←'/'@('\'∘=)' "',file,'"'
+                  :EndIf
+                      res.content←cnt
+     
+                  done←1
+              :Else
+                  :If ~0∊zMap
+                      res←.content'<b>Found no mapping that would enable access to "',file,'"</b>'
+                      →0
+                  :EndIf
+                  file←((iMap⊃⎕SE.CITA.Config.MAPPINGS.devt)⎕R((zMap⍳0)⊃⎕SE.CITA.Config.MAPPINGS.devt)⎕OPT'Regex' 0)file
+                  iMap←zMap⍳0
+                  zMap[iMap]←2  ⍝ mark this mapping as "tried"
+              :EndIf
+          :Until done
+      :Else
+          res.content←'<b>Unauthorized access!</b>'
+      :EndIf
+    ∇
+
     ∇ R←Home
       :If 0=⎕NC'_Home'
-          :If 18.1≤2⊃⎕vfi 4↑2⊃'.'⎕WG'APLVersion'
+          :If 18.1≤2⊃⎕VFI 4↑2⊃'.'⎕WG'APLVersion'
               _Home←1⊃⎕NPARTS 50 ⎕ATX 1⊃⎕SI
           :Else
               _Home←1⊃⎕NPARTS 4⊃5179⌶1⊃⎕SI

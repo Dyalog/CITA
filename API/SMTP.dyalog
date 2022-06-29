@@ -1,4 +1,4 @@
-﻿:Class SMTP
+:Class SMTP
 
 ⍝ Based on original work by Conrad Hoesle-Kienzlen in 1999
 ⍝ Updated by Morten Kromberg to use UTF-8 text, 2009
@@ -30,7 +30,7 @@
 
     ∇ r←Version
       :Access public shared
-      r←'SMTP' '1.4' '2021-09-09'
+      r←'SMTP' '1.3' '2021-03-02'
     ∇
 
     :property EHLOResponse
@@ -165,10 +165,7 @@
       :If 0∊⍴From ⋄ From←Userid ⋄ :EndIf
      
       →Exit if 0<≢msg←(0∊⍴From)/'No From address specified'
-      :If 0=mail.⎕NC'From'
-      :OrIf 0∊⍴mail.From
-          mail.From←From
-      :EndIf
+      :If 0∊⍴mail.From ⋄ mail.From←From ⋄ :EndIf
      
       :Select ⎕NC⊂'mail'
       :Case 9.2 ⍝ instance
@@ -608,12 +605,10 @@
         ∇
 
         ∇ list←type FormatList list
-          :Access public shared
-        ⍝ list may be a matrix, a simple (delimited) vector, or a vector of vectors
           :If ~0∊⍴list
               :If 2=≢⍴list ⍝ matrix of names?
                   list←↓list
-              :ElseIf (≡list)∊0 1
+              :Else
                   list←list((~∊)⊆⊣)',;' ⍝ otherwise split on ; or ,
               :EndIf
               list←{⍵↓⍨-+/∧\' '=⌽⍵}¨list
@@ -735,7 +730,7 @@
 
         ∇ rc←now;time;day;mon;s;x;LOCTIME;TIMEZONE;isUnicode;twid
           :Access public shared
-        ⍝ returns an internet-conforming (RFC 5322) timestamp
+        ⍝ returns an internet-conforming (RFC 2822) timestamp
           :If 'Win'≡3↑⊃'.'⎕WG'APLVersion'
               isUnicode←80=⎕DR'A'
               twid←64 32[1+isUnicode] ⍝ set width for text elements based on unicode or not
@@ -752,9 +747,9 @@
               rc←rc,,'I4,< >,ZI2,<:>,ZI2,<:>,ZI2,< >'⎕FMT 1 4⍴time[1 5 6 7]
         ⍝ call timezone function and calculate offset from GMT
               x←TIMEZONE⊂0(twid⍴' ')(8⍴0)0(twid⍴' ')(8⍴0)0
-              x←(1⌈⊃x),2⊃x ⍝ 1⌈ to accomodate timezones that do not recognize daylight savings time
+              x←(⊃x),2⊃x
               s←'+-'[1+0>x←(-2⊃x)+-x[(5 8)[⊃x]]]
-              rc←rc,s,,'ZI4,< (UTC)>'⎕FMT|100×x÷60
+              rc←rc,s,,'ZI4,< (GMT)>'⎕FMT|100×x÷60
           :Else
               rc←1⊃⎕SH'date -R' ⍝ unix - call date command
           :EndIf

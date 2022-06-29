@@ -3,7 +3,7 @@
 ⍝ (0,⍳300)⎕TRACE'lx'  ⍝ trace is buggy - don't use it! (need http://mantis.dyalog.com/view.php?id=19349 to be fixed...)
  Env←{2 ⎕NQ'.' 'GetEnvironment'⍵}  ⍝ get environment variable or cmdline
  NL←⎕UCS 13
- :If 0<≢Env'Executorlog' ⋄ ⎕SE.Executor∆OldLog←⎕SE ⎕WG'Log' ⋄ :EndIf
+ :If 0<≢Env'CITA_log' ⋄ ⎕SE.RunCITA∆OldLog←⎕SE ⎕WG'Log' ⋄ :EndIf
  DEBUG←{((,'0')≢⍵)∧0<≢⍵:1 ⋄ 0}Env'CITADEBUG'
 
  ⎕←'Executor.lx - CommandlineArgs:' ,2 ⎕NQ'.' 'GetCommandlineArgs'
@@ -118,7 +118,7 @@
                  rc←21
                  ⎕←'Error executing test ',(1⊃⎕XSI),': '
                  ⎕←'⎕DMX='
-                 ⎕←(⍎'(⎕json⎕OPT''Compact''0) ⎕dmx')    ⍝ avoid problems with 12.1 which can't tokenize ⎕DMX (saved in 12.1, executed in 18)
+                 ⎕←(⍎'(⎕json⎕OPT''Compact''0) ⎕se.SALTUtils.dmx')    ⍝ avoid problems with 12.1 which can't tokenize ⎕DMX (saved in 12.1, executed in 18)
                  ⎕←'en=',⎕EN
                  subj HandleError' ]',cmd
              :EndTrap

@@ -16,13 +16,6 @@ stage ("win_%VERSION%") {
           ed = EDITION.take(1)
           EDITION = EDITION.capitalize()
           echo "EDITION=${EDITION}"
-          path = "/Windows/explorer.exe"
-          exists = fileExists(path)
-          if (exists) {
-            echo "PLATFORM=win, path=${path}: File exists!"
-          } else {
-            echo "File $path does not exist"
-          }
 
           if (BITS==32) {
             path = "/Program Files (x86)/Dyalog/Dyalog APL %VERSION% ${EDITION}"
@@ -38,14 +31,15 @@ stage ("win_%VERSION%") {
             error "Found no interpreter for ${ed}_${BITS} on ${env.NODE_NAME}. Labels: ${env.NODE_LABELS}"
           }
           testPath="%xinD%win_%VERSION%${ed}${BITS}/"
-          citaLOG="${testPath}CITA.log.json"
+          citaLOG="${testPath}CITA.log"
           //cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${testPath}CITA.log"
-          cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${citaLOG} CITADEBUG=1"
-          //cmdline = "${cmdline} > ${testPath}ExecuteLocalTest.log"
+          cmdline = "%CMDLINE% citaDEVT=${citaDEVT} CONFIGFILE=${testPath}cita.dcfg CITA_Log=${citaLOG}"
+          cmdline = "${cmdline} > ${testPath}ExecuteLocalTest.log"
           echo "Launching ${path} ${cmdline} "
           rjc = bat(script: "\"${path}\" ${cmdline}" , returnStatus: true)
           echo "citaLOG=$citaLOG"
-          citaLOG="${testPath}CITA.log.json" // remove this line if we can work with .json file!
+
+          citaLOG="${testPath}CITA.log.json"
           exists = fileExists(citaLOG)
           echo "citaLOG=$citaLOG, exists=$exists"
           rc = 0
