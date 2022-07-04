@@ -866,7 +866,7 @@
           d.state←'pending'
           d.description←'CITA is running tests (',xinO,')'
           d.context←'CITA'
-          {}d ##.GitHub.SetStatus arg.(_1 _2),⊂sha
+        ⍝   {}d ##.GitHub.SetStatus arg.(_1 _2),⊂sha
      
         ⍝   :Else
         ⍝       ⎕←'Error while attempting to create subfolder for test: ',xinO
@@ -1241,6 +1241,7 @@
                    d.target_url←_filenameToURL resDir,'CITA.log.html'
                   d.description←(∊lbl),' (',xinO,')'
                   d.context←'CITA'
+                  →Exit
                   r←d ##.GitHub.SetStatus arg.(_1 _2),⊂sha
                   :If r.rc≠0
                   :OrIf r.HttpStatus≠201
@@ -1430,6 +1431,8 @@
           ⎕←'cmd=',cmd
           ⎕←'outfile=',outfile,' | xin=',xin,', RIDE_INIT=serve:127.0.0.1:',(⍕port)
         ⍝  :EndIf
+        ⎕←'APLProcess.Version:'
+        ⎕←##.APLProcess.Version
           proc←⎕NEW ##.APLProcess(dws cmd(interpreter{0::0 ⋄ ⍺⍎⍵}'exe')('serve:127.0.0.1:',⍕port)outfile xin) ⋄ ai3←⎕AI[3]
           proc.psLogFile←xin,'/pslog.txt'
           ⎕←'pid of child process: ',⍕proc.Proc.Id

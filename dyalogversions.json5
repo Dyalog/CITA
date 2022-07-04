@@ -10,8 +10,8 @@
         "aix",
         "mac",
         "pi",
-        "win",
-        "linux",
+         "win",
+        //"linux",
         
     ],
     platforms_editions: {

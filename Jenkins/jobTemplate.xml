@@ -70,6 +70,10 @@ pipeline {
             if (0 == lockFILE.length()) {
               sh "rm ${lockFILE}"
             }
+            // withCredentials([usernamePassword(credentialsId: '64cde681-2071-415b-adb6-d912d39b8b1c', passwordVariable: 'SMTP_PASSWORD', usernameVariable: 'SMTP_USER')]) {
+            // sh ''  // call postProcessor
+            // }
+  
             sh 'exit 0'
           } catch (err) {
             echo "Caught error: ${err}"

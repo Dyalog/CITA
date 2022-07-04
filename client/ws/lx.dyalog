@@ -5,7 +5,6 @@
  NL←⎕UCS 13
  :If 0<≢Env'CITA_log' ⋄ ⎕SE.RunCITA∆OldLog←⎕SE ⎕WG'Log' ⋄ :EndIf
  DEBUG←{((,'0')≢⍵)∧0<≢⍵:1 ⋄ 0}Env'CITADEBUG'
-
  ⎕←'Executor.lx - CommandlineArgs:' ,2 ⎕NQ'.' 'GetCommandlineArgs'
  :If (,'1')≡,2 ⎕NQ'.' 'GetEnvironment' 'WFR'
  :AndIf 14<+/1 0.1×2↑⊃(//)'.'⎕VFI 2⊃'.'⎕WG'APLVersion'   ⍝ RIDE Connections are detected from 14.1 onwards
@@ -110,7 +109,8 @@
                  ⎕SE.UCMD cmd
                  ⎕←2 ⎕SE._cita.RecordMemStats'End of CITATest'
 
-                 :If ⎕NEXISTS s←(∊2↑⎕NPARTS subj),'.log'
+                ⍝  :If ⎕NEXISTS s←(∊2↑⎕NPARTS subj),'.log'
+                 :If ⎕NEXISTS s←Env'testlog'
                      ⎕SE._cita.Failure 1⊃⎕NGET s
                  :EndIf
                  ⎕SE._cita.Success''

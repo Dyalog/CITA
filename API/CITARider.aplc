@@ -1,4 +1,4 @@
-﻿:Class CITARider
+:Class CITARider
 ⍝ based on Nic's GhostRider - but focussed on the parts of RIDE that are relevant for CITA
 ⍝
 ⍝ Headless RIDE client for QA and automation.
@@ -231,11 +231,15 @@
       :EndIf
       :If APLProcess≡⎕NULL
           :If ⎕NEXISTS SRCDIR,'APLProcess.dyalog'
-              APLProcess←⎕SE.SALT.Load SRCDIR,'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
+            ⎕←  ⎕SE.SALT.Load SRCDIR,'APLProcess.dyalog -target=',⍕⎕this.##.##   ⍝ ensure we load it in the shared class and not in the instance
+          :elseIf ⎕NEXISTS SRCDIR,'APLProcess.aplc'
+            ⎕←  ⎕SE.SALT.Load SRCDIR,'APLProcess.aplc -target=',⍕⎕this.##.##  ⍝ ensure we load it in the shared class and not in the instance
           :Else
-              APLProcess←⎕SE.SALT.Load'APLProcess -target=',⍕⊃⊃⎕CLASS ⎕THIS  ⍝ ensure we load it in the shared class and not in the instance
+            ⎕←  ⎕SE.SALT.Load'APLProcess -target=',⍕⎕this.##.##   ⍝ ensure we load it in the shared class and not in the instance
           :EndIf
       :EndIf
+⎕←'APLProcess.Version:'
+⎕←##.##.APLProcess.Version
     ∇
 
     ∇ port←GetTcpPort;addr;rc;srv
@@ -1233,9 +1237,12 @@
           :Select 4↑2⊃'.'⎕WG'APLVersion'
           :CaseList '18.0' '18.1'
               R←4⊃5179⌶1⊃⎕SI
-          :Else  ⍝ let's hope it's v19 and onward
+          :Else  ⍝ let's hope it's v18.2 and onward
               R←50 ⎕ATX 1⊃⎕SI
           :EndSelect
+          :if 0=≢R
+          R←(⎕se.CITA.Home),'/API/'
+          :endif
       :Else
           ⎕←'SRCDIR: trapped error in SRCDIR'
           ⎕←(⎕JSON ⎕OPT'Compact' 0)⎕DMX

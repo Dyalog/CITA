@@ -4,5 +4,6 @@
     "Paradigm":"JSON",
     "Port":8080,
     "AppInitFn": "Run",
-    "HTMLInterface":"/app/server/"
+    "HTMLInterface":"/app/server/",
+    "HTMLDefaultPage":""
 }

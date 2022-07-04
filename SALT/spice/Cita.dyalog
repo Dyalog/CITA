@@ -88,13 +88,13 @@
               :If 0=⎕SE.CITA.⎕NC'APLProcess'  ⍝ it probably no longer exists in the API folder, so we use what we got with the interpreter...
                   ⎕SE.SALT.Load'APLProcess -target=⎕SE.CITA'
               :EndIf
-      ⎕SE.SALT.Load Home,'/../deps/DCL/Crypt.dyalog -target=#'
-      #.Crypt.Init Home,'/../deps/DCL/'              
+            ⎕SE.SALT.Load Home,'/../deps/DCL/Crypt.dyalog -target=#'
+            #.Crypt.Init Home,'/../deps/DCL/'              
               ⎕SE.CITA.API._InitUCMDs
               :If ureset
                   ⎕SE.SALTUtils.ResetUCMDcache 1  ⍝ avoid calling ]UReset, as that would add another call to List etc...
               :EndIf
-              ⎕SE.CITA.Config←(⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET Home,'/../CITA_Config.json5'
+              ⎕SE.CITA.Config←(⎕se.CITA.⎕JSON ⎕OPT'Dialect' 'JSON5')1⊃⎕NGET Home,'/../CITA_Config.json5'
      
      
           :Else
